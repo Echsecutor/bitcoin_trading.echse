@@ -1,10 +1,7 @@
 #!/usr/bin/python3
-"""This is a small command line utility to automatically perform some
-actions on mailman lists through the webinterface. See :func:`help`
-for the usage..
-
-.. module:: mailman-auto
-   :synopsis: Poor man's mailman web interface automation.
+"""
+This is a small python tool usign the bitcoin.de trading API v2.
+See https://www.bitcoin.de/de/api/tapi/v2/docu
 
 .. moduleauthor:: Sebastian Schmittner <sebastian@schmittner.pw>
 
@@ -25,173 +22,74 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-
-import requests
-import re
-from getpass import getpass
+import argparse
+import hashlib
+from http.client import HTTPConnection
+import hmac
 import logging
-import json
-import sys
+import requests
+import time
 
+c_private_key = ""
+"API secret"
 
-class Action(object):
+c_public_key = ""
+"API key"
+
+c_api_url = "https://api.bitcoin.de/v2"
+"Base url for all calls"
+
+def read_key_from_file(filename):
+    "Read and return first line of a file"
+    with open(filename, "r") as key_file:
+        return key_file.readline()
+
+def generate_api_signature(method, url, nonce, post_params):
     """
-    Enum of possible actions.
+    Generate and return X-API-SIGNATURE according to
+    http://www.bitcoin.de/de/api/tapi/v2/docu
     """
+    sorted_params = []
+    for key, val in post_params.items():
+        sorted_params.append("{}={}".format(key, val))
+    sorted_params.sort()
+    query_string = "?".join(sorted_params)
+    logging.debug("query_string: '{}' = {}".format(query_string, query_string.encode()))
+    hashed_query_string = hashlib.md5(query_string.encode()).hexdigest()
+    hmac_data = "{}#{}#{}#{}#{}".format(
+        method,
+        url,
+        c_public_key,
+        nonce,
+        hashed_query_string
+        )
+    logging.debug("hamc_data: %s", hmac_data)
 
-    CHANGE_OPTION_FOR_ALL_LISTS = "CHANGE_OPTION_FOR_ALL_LISTS"
-    CHANGE_OPTION_FOR_SINGLE_LISTS = "CHANGE_OPTION_FOR_SINGLE_LISTS"
-
-
-def password_field_in_response(text):
-    """Scannes a string (html response) for the occurence of a password
-    prompt.
-
-    :param str text: The (html) response to be scanned.
-    :return: whether a prompt was found
-    :rtype: bool
-    """
-    password_needed = re.search(r"([\w ]+) Password:", text)
-    if password_needed:
-        logging.info(
-            "Need {} Password to continue.".format(password_needed.group(1)))
-        return True
-    return False
-
-
-def login(session, list_url, password=None):
-    """Read passwd from stdin if not given and login.
-
-    :param requests.Session session: Use this session for the connection.
-    :param str list_url: The url to log in to.
-    :param str password: The password to be used.
-    :return: success
-    :rtype: bool
-
-    """
-    if not password:
-        password = getpass()
-    r = session.post(
-        list_url, data={"adminpw": password,
-                        "admlogin": "Let+me+in..."})
-
-    if password_field_in_response(r.text):
-        logging.error("Login failed")
-        return False
-
-    return True
-
-def list_url_concat(base_url, list_name):
-    list_url = base_url
-    if base_url[-1] != '/':
-        list_url += "/"
-    list_url += list_name
-    return list_url
+    return hmac.new(
+        c_private_key.encode(),
+        msg=hmac_data.encode(),
+        digestmod="sha256").hexdigest()
 
 
-def connect(session, base_url, list_name, password=None):
-    """Connect to a list and login.
+def get_public_trade_history(since_tid=None):
+    url = c_api_url + "/trades/history?trading_pair=btceur"
+    if since_tid:
+        url += "&since_tid={}".format(since_tid)
+    headers = {'X-API-KEY': c_public_key,
+               'X-API-NONCE': str(int(time.time()))}
 
-    :param requests.Session session: Use this session for the connection.
-    :param str base_url: Base for the list url.
-    :param str list_name: This is the list url postfix.
-    :param str password: The password to be used.
-    :return: success, list url
-    :rtype: bool, string
+    headers['X-API-SIGNATURE'] = generate_api_signature(
+        "GET", url, headers['X-API-NONCE'], {})
+    logging.debug("headers={}".format(headers))
 
-    """
-    list_url = list_url_concat(base_url, list_name)
+    r = requests.get(url, headers=headers)
 
-    r = session.get(list_url)
-    logging.info("Connected to List {}: {} {}".format(list_name, r.status_code,
-                                                      r.reason))
-    if password_field_in_response(r.text):
-        success = login(session, list_url, password)
-        if not success:
-            logging.error("Log in to List {} failed.".format(list_name))
-            return False
+    logging.debug("Response (%s = %s): %s",
+                  r.status_code,
+                  r.reason,
+                  r.content)
 
-    logging.info("Logged in to list {}".format(list_name))
-
-    return True, list_url
-
-
-def change_option(session, list_url, form, key, value):
-    """Change the value of a key (e.g. "msg_footer") in a form
-    (e.g. "nondigest") for the given list. Needs to be logged in with
-    sufficient privilidges.
-
-    :param requests.Session session: Use this session for the connection.
-    :param str list_url: The url to log in to.
-    :param str form: Which form contains the key? (e.g. "nondigest").
-    :param str key: Key to be changed (e.g. "msg_footer").
-    :param str value: The new value.
-    :rtype: None
-    """
-
-    url = list_url
-    if url[-1] != '/':
-        url += "/"
-    url += form
-
-    r = session.get(url)
-    token_match = re.search(r'name="csrf_token"\s*value="([^"]+)"', r.text)
-    if token_match:
-        token = token_match.groups(1)
-    else:
-        raise Exception("Could not finde csrf_token in {}".format(r.text))
-
-    post_data = {key: value, "csrf_token": token}
-    r = session.post(url, data=post_data)
-
-    logging.info("{} changed".format(key))
-    logging.debug("to '{}'".format(value))
-
-
-def change_option_for_all_lists(session, config):
-    """ Set a mailman key=value for all (advertised) lists at a given site.
-
-    :param requests.Session session: Session for the connection.
-    :param dict config: The configuration needs to contain the keys:
-                        "base_url", "form", "key", "value"
-                        and might contain "global_passwd".
-    :rtype: None
-
-    """
-
-    r = session.get(config["base_url"])
-    list_names = re.finditer(r'href="admin/([^"]+)"', r.text)
-
-    for match in list_names:
-        # mailman polutes cookies until 400 cookies too large...
-        # ->clear
-        session.cookies.clear()
-        config["list_name"] = match.group(1)
-        change_option_for_single_list(session, config)
-
-    logging.info("{} lists processed.".format(len([list_names])))
-
-
-def change_option_for_single_list(session, config):
-    """ Set a mailman key=value for a given list.
-
-    :param requests.Session session: Session for the connection.
-    :param dict config: The configuration needs to contain the keys:
-                        "list_name", "base_url", "form", "key", "value"
-                        and might contain "global_passwd".
-    :rtype: None
-
-    """
-    logging.info("Connecting to List '{}'".format(config["list_name"]))
-    success, list_url = connect(session, config["base_url"],
-                                config["list_name"],
-                                config.get("global_passwd", None))
-    if not success:
-        logging.error(
-            "Could not connect to list '{}'".format(config["list_name"]))
-    else:
-        change_option(session, list_url, config["form"],
-                      config["key"], config["value"])
+    return r
 
 
 def main():
@@ -199,7 +97,8 @@ def main():
     server and performs (an) action(s) on all lists.
 
     """
-    import argparse
+    global c_private_key
+    global c_public_key
 
     logger_cfg = {
         "level":
@@ -209,102 +108,45 @@ def main():
     }
 
     parser = argparse.ArgumentParser(
-        description="Perform some action on all lists " +
-        "at a given mailman site.")
-    parser.add_argument("-u", "--url", help="The site's base url.")
+        description="Communicate with bitcoin.de using the trading API.\n" +
+        "You need API keys!")
     parser.add_argument(
-        "-g",
-        "--global-passwd",
-        action='store_true',
-        help="Use a global password (e.g. site admin) for all lists.")
+        "-k",
+        "--key",
+        required=True,
+        help="The public key file.")
     parser.add_argument(
-        "-a",
-        "--action",
-        help="Which action to perform.",
-        choices=[
-            "CHANGE_OPTION_FOR_ALL_LISTS", "CHANGE_OPTION_FOR_SINGLE_LISTS"
-        ])
-    parser.add_argument(
-        "-v", "--value", help="Value for the action, e.g. new footer msg.")
-    parser.add_argument(
-        "-k", "--key", help="Key for the action, e.g. 'msg_footer'.")
-    parser.add_argument(
-        "-f", "--form", help="Form containing the key, e.g. 'nondigest'.")
-    parser.add_argument(
-        "-n", "--list-name", help="List to be changed.")
+        "-s",
+        "--secret",
+        required=True,
+        help="The private key file.")
     parser.add_argument(
         "-l",
         "--log",
         help="Set the log level. Default: INFO.",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         default="INFO")
-    parser.add_argument(
-        "-c",
-        "--config",
-        help="Read config from JSON file. " +
-        "Command line arguments override parameters from this file.")
 
     args = parser.parse_args()
 
     logger_cfg["level"] = getattr(logging, args.log)
     logging.basicConfig(**logger_cfg)
 
+    # in debug mode: full log all requests
+    if logger_cfg["level"] <= 10:
+        HTTPConnection.debuglevel = 1
+        requests_log = logging.getLogger("requests.packages.urllib3")
+        requests_log.setLevel(logging.DEBUG)
+        requests_log.propagate = True
+
     print("Log messages above level: {}".format(logger_cfg["level"]))
 
-    config = {}
+    c_private_key = read_key_from_file(args.secret)[:-1]
+    c_public_key = read_key_from_file(args.key)[:-1]
 
-    if args.config:
-        with open(args.config, "r") as cfg_file:
-            config = json.load(cfg_file)
+    logging.debug("public key: %s", c_public_key)
 
-    if args.url:
-        config["base_url"] = args.url
-
-    if not config.get("base_url", None):
-        logging.critical("No base url given.")
-        parser.print_help()
-        sys.exit(1)
-    else:
-        logging.info("base_url: '{}'".format(config["base_url"]))
-
-    if args.global_passwd:
-        config["use_global_passwd"] = args.global_passwd
-
-    logging.info("use_global_passwd: '{}'".format(
-        config.get("use_global_passwd", False)))
-
-    if config.get("use_global_passwd", None)\
-       and not config.get("global_passwd", None):
-        config["global_passwd"] = getpass()
-
-    if args.form:
-        config["form"] = args.form
-    logging.info("form: '{}'".format(config.get("form", None)))
-
-    if args.key:
-        config["key"] = args.key
-    logging.info("key: '{}'".format(config.get("key", None)))
-
-    if args.value:
-        config["value"] = args.value
-    logging.info("value: '{}'".format(config.get("value", None)))
-
-    if args.list_name:
-        config["list_name"] = args.list_name
-    logging.info("list_name: '{}'".format(config.get("list_name", None)))
-
-    if args.action:
-        config["action"] = args.action
-
-    action = config.get("action", None)
-    logging.info("action: '{}'".format(action))
-
-    if action == Action.CHANGE_OPTION_FOR_ALL_LISTS:
-        change_option_for_all_lists(requests.Session(), config)
-    elif action == Action.CHANGE_OPTION_FOR_SINGLE_LISTS:
-        change_option_for_single_list(requests.Session(), config)
-    else:
-        logging.error("Action {} is not supported.".format(action))
+    get_public_trade_history()
 
     logging.info("[FINISHED]")
 
