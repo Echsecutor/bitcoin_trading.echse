@@ -92,8 +92,11 @@ def query(url, method="GET", post_params={}, headers={}):
                   r.status_code,
                   r.reason)
 
+#    logging.debug("Content = %s", r.content)
+
     if r.status_code == 200:
         __credits = r.json()["credits"]
+        logging.debug("Credits left: %s", __credits)
 
     return r
 
@@ -106,11 +109,12 @@ def get_public_trade_history(since_tid=None):
     url = c_api_url + "/trades/history?trading_pair=btceur"
     if since_tid:
         url += "&since_tid={}".format(since_tid)
+        logging.debug("since_tid = %s", since_tid)
 
     r = query(url)
 
     if r.status_code != 200:
-        logger.error("Error getting trade history. Response %s", r.status_code)
+        logging.error("Error getting trade history. Response %s", r.status_code)
         return None
 
     return r.json()

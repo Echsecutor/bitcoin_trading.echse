@@ -40,12 +40,14 @@ def update_trades():
     pre: set the public and private key for the api_call module.
     pre: initialise lite_dbconnection
     """
-    r = api_call.get_public_trade_history()
+    logging.info("Updating trades DB...")
+
+    max_tid = lite_db.get_max_tid()
+    r = api_call.get_public_trade_history(max_tid)
     if not r:
         logging.error("Could not retrieve trade history")
         return
-    trades = r["trades"]
-    lite_db.insert_trades(trades)
+    lite_db.insert_trades(r)
 
 
 def main():
@@ -109,10 +111,9 @@ def main():
 
     lite_db.init_connect_db(args.database_file)
 
-    logging.debug("Updating trades DB...")
     update_trades()
 
-    print(lite_db.get_trades())
+    logging.debug("%s trades in DB", lite_db.get_num_trades())
 
     lite_db.close()
     logging.info("[FINISHED]")
