@@ -20,6 +20,7 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -43,6 +44,7 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *,cover
+*.cover
 .hypothesis/
 
 # Translations
@@ -67,6 +69,7 @@ docs/_build/
 target/
 
 # IPython Notebook
+# Jupyter Notebook
 .ipynb_checkpoints
 
 # pyenv
@@ -75,15 +78,20 @@ target/
 # celery beat schedule file
 celerybeat-schedule
 
+# SageMath parsed files
+*.sage.py
+
 # dotenv
 .env
 
 # virtualenv
+.venv
 venv/
 ENV/
 
 # Spyder project settings
 .spyderproject
+.spyproject
 
 # Rope project settings
 .ropeproject
@@ -91,3 +99,8 @@ ENV/
 
 # emacs tmp
 *~
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
