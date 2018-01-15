@@ -44,9 +44,6 @@ def init_connect_db(p_db_file_name):
     Open/Create database and create schema, if necessary.
     Return connection.
     """
-    global __connection
-    global __trades_table_name
-
     __connection = sqlite3.connect(p_db_file_name)
     c = __connection.cursor()
 
@@ -66,26 +63,23 @@ def close():
     __connection.close()
 
 
-def insert_trades(publi_trades_history_json):
+def insert_trades(p_publi_trades_history_json):
     """
     pre: __connection initialised
     Insert new trades into the DB.
     Expects json with list of trades dicts and trading_pair
     as returned by the api.
     """
-    global __connection
-    global __trades_table_name
-
-    trades = publi_trades_history_json["trades"]
+    trades = p_publi_trades_history_json["trades"]
     c = __connection.cursor()
 
     for trade in trades:
         trade_list = []
 
         for column_name in [x[0] for x in __trades_table_columns]:
-            if column_name in publi_trades_history_json:
+            if column_name in p_publi_trades_history_json:
                 trade_list.append(
-                    publi_trades_history_json[column_name])
+                    p_publi_trades_history_json[column_name])
             else:
                 trade_list.append(trade[column_name])
 
@@ -98,20 +92,24 @@ def insert_trades(publi_trades_history_json):
 
 
 def get_max_tid():
-    global __connection
     c = __connection.cursor()
 
     return c.execute("SELECT max(tid) FROM " + __trades_table_name).fetchone()[0]
 
 
-def get_trades():
+def get_trades_in_time_window(p_from, p_to, p_trading_pair="btceur"):
+    """
+    return all trades with from <= date < to
+    """
+    c = __connection.cursor()
+    return [row for row in c.execute('SELECT * FROM ' + __trades_table_name + ' WHERE (date >= ? AND date < ?'), [p_from, p_to]]
+
+
+def get_all_trades():
     """
     Retrieve all trades from the DB.
     pre: __connection initialised
     """
-    global __connection
-    global __trades_table_name
-
     c = __connection.cursor()
 
     return [row for row in c.execute('SELECT * FROM ' + __trades_table_name)]
