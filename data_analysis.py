@@ -23,27 +23,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import lite_db
 
 
-def get_percentiles_for_time_window(p_from, p_to, p_percentiles=0.2, p_trading_pair="btceur", p_data_index=2):
-    """Return the median and a numpy array of length
-    floor(1/p_percentiles) + 1 containing the percentiles.  I.e. the
-    minimum values such that 1, p_percentiles * total, 2 *
-    p_percentiles * total, ..., all points are <= than the respective
-    values.
+def get_percentiles_for_time_window(p_from, p_to, p_percentiles=[0,0.2, 0.4, 0.5,0.6,0.8,1], p_trading_pair="btceur", p_data_index=2):
+    """Return a list of len = len(p_percentiles) the percentiles.
+    I.e. the minimum values such that the given ratio of the data
+    points are <= than the respective values.  In particular, the
+    percentiles 0, 0.5 and 1 correspond to the minimum, median and
+    maximum values.
     """
     data = lite_db.get_trades_in_time_window(p_form,p_to, p_trading_pair)
     num = len(data)
     data.sort(key=lambda x: x[p_data_index])
     current_pos = 0
-    percentile_at = 0
+    percentile_at = int(p_percentiles[0] * num)
     percentiles = []
-    median = 0
     for row in data:
         if percentile_at <= current_pos:
             percentiles.append(row[p_data_index])
-            percentile_at = min(num, percentile_at + p_percentiles * num)
-        if current_pos == int(num / 2.):
-            median = row[p_data_index]
+            percentile_at = int(p_percentiles[0] * num)
+            assert (percentile_at <= num)
         current_pos += 1
 
-    assert(len(percentiles) == int(1. / p_percentiles) + 1)
-    return median, percentiles
+    assert(len(percentiles) == len(p_percentiles))
+
+    return percentiles
