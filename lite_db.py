@@ -44,6 +44,7 @@ def init_connect_db(p_db_file_name):
     Open/Create database and create schema, if necessary.
     Return connection.
     """
+    global __connection
     __connection = sqlite3.connect(p_db_file_name)
     c = __connection.cursor()
 
@@ -102,7 +103,7 @@ def get_trades_in_time_window(p_from, p_to, p_trading_pair="btceur"):
     return all trades with from <= date < to
     """
     c = __connection.cursor()
-    return [row for row in c.execute('SELECT * FROM ' + __trades_table_name + ' WHERE (date >= ? AND date < ?'), [p_from, p_to]]
+    return [row for row in c.execute('SELECT * FROM ' + __trades_table_name + ' WHERE (date >= ? AND date < ?', (p_from, p_to))]
 
 
 def get_all_trades():
