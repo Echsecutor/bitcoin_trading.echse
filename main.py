@@ -29,6 +29,7 @@ import logging
 import api_call
 import lite_db
 
+
 def read_key_from_file(filename):
     "Read and return first line of a file"
     with open(filename, "r") as key_file:
