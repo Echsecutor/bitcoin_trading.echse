@@ -22,100 +22,96 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import sqlite3
 
-__connection = None
-"""Module level variable holding the sql lite db connection"""
 
-__trades_table_name = "public_trade_history"
+TRADES_TABLE_NAME = "public_trade_history"
 "const schema"
 
-__trades_table_columns = [("trading_pair", "text"),
+
+TRADES_TABLE_COMUMNS = [("trading_pair", "text"),
                           ("date", "text"),
                           ("price", "real"),
                           ("amount", "real"),
                           ("tid", "INTEGER PRIMARY KEY")]
 "const schema"
 
-__trades_table_columns_names = "(" + ", ".join(x[0] for x in __trades_table_columns) + ")"
+TRADES_TABLE_COMUMNS_NAMES = "(" + ", ".join(x[0] for x in TRADES_TABLE_COMUMNS) + ")"
 "const schema"
 
 
-def init_connect_db(p_db_file_name):
-    """
-    Open/Create database and create schema, if necessary.
-    Return connection.
-    """
-    global __connection
-    __connection = sqlite3.connect(p_db_file_name)
-    c = __connection.cursor()
+class DBCoin(object):
+    def __init__(self, p_db_file_name):
+        """
+        Open/Create database and create schema, if necessary.
+        Return connection.
+        """
+        self.connection = sqlite3.connect(p_db_file_name)
+        # Create table if not existing
+        create_query = "CREATE TABLE IF NOT EXISTS "
+        create_query += TRADES_TABLE_NAME + "("
+        create_query += ", ".join(column_name + " " + column_type for (column_name, column_type) in TRADES_TABLE_COMUMNS)
+        create_query += ")"
 
-    # Create table if not existing
-    create_query = "CREATE TABLE IF NOT EXISTS "
-    create_query += __trades_table_name + "("
-    create_query += ", ".join(column_name + " " + column_type for (column_name, column_type) in __trades_table_columns)
-    create_query += ")"
+        with self.connection:
+            self.connection.execute(create_query)
 
-    c.execute(create_query)
-    __connection.commit()
+    def close(self):
+        """Close the module level connection.
+        """
+        self.connection.close()
 
+    def __enter__(self):
+        return self
 
-def close():
-    """Close the module level connection.
-    """
-    __connection.close()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
+    def insert_trades(self, p_publi_trades_history_json):
+        """
+        pre: __connection initialised
+        Insert new trades into the DB.
+        Expects json with list of trades dicts and trading_pair
+        as returned by the api.
+        """
+        trades = p_publi_trades_history_json["trades"]
+        with self.connection:
+            for trade in trades:
+                trade_list = []
 
-def insert_trades(p_publi_trades_history_json):
-    """
-    pre: __connection initialised
-    Insert new trades into the DB.
-    Expects json with list of trades dicts and trading_pair
-    as returned by the api.
-    """
-    trades = p_publi_trades_history_json["trades"]
-    c = __connection.cursor()
+                for column_name in [x[0] for x in TRADES_TABLE_COMUMNS]:
+                    if column_name in p_publi_trades_history_json:
+                        trade_list.append(
+                            p_publi_trades_history_json[column_name])
+                    else:
+                        trade_list.append(trade[column_name])
 
-    for trade in trades:
-        trade_list = []
+                self.connection.execute("INSERT OR IGNORE INTO "
+                          + TRADES_TABLE_NAME
+                          + TRADES_TABLE_COMUMNS_NAMES
+                          + " VALUES (?,?,?,?,?)",
+                          trade_list)
 
-        for column_name in [x[0] for x in __trades_table_columns]:
-            if column_name in p_publi_trades_history_json:
-                trade_list.append(
-                    p_publi_trades_history_json[column_name])
-            else:
-                trade_list.append(trade[column_name])
-
-        c.execute("INSERT OR IGNORE INTO "
-                  + __trades_table_name
-                  + __trades_table_columns_names
-                  + " VALUES (?,?,?,?,?)",
-                  trade_list)
-    __connection.commit()
-
-
-def get_max_tid():
-    c = __connection.cursor()
-
-    return c.execute("SELECT max(tid) FROM " + __trades_table_name).fetchone()[0]
+    def get_max_tid(self):
+        with self.connection:
+            return self.connection.execute("SELECT max(tid) FROM " + TRADES_TABLE_NAME).fetchone()[0]
 
 
-def get_trades_in_time_window(p_from, p_to, p_trading_pair="btceur"):
-    """
-    return all trades with from <= date < to
-    """
-    c = __connection.cursor()
-    return [row for row in c.execute('SELECT * FROM ' + __trades_table_name + ' WHERE (date >= ? AND date < ?', (p_from, p_to))]
+    def get_trades_in_time_window(self, p_from, p_to, p_trading_pair="btceur"):
+        """
+        return all trades with from <= date < to
+        """
+        with self.connection:
+            return [row for row in self.connection.execute('SELECT * FROM ' + TRADES_TABLE_NAME + ' WHERE (date >= ? AND date < ?', (p_from, p_to))]
 
 
-def get_all_trades():
-    """
-    Retrieve all trades from the DB.
-    pre: __connection initialised
-    """
-    c = __connection.cursor()
+    def get_all_trades(self):
+        """
+        Retrieve all trades from the DB.
+        pre: __connection initialised
+        """
+        with self.connection:
+            return [row for row in self.connection.execute('SELECT * FROM ' + TRADES_TABLE_NAME)]
 
-    return [row for row in c.execute('SELECT * FROM ' + __trades_table_name)]
 
-
-def get_num_trades():
-    c = __connection.cursor()
-    return c.execute("SELECT COUNT(tid) from " + __trades_table_name).fetchone()[0]
+    def get_num_trades(self):
+        with self.connection:
+            return self.connection.execute("SELECT COUNT(tid) from " + TRADES_TABLE_NAME).fetchone()[0]

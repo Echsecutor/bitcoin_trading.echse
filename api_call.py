@@ -29,92 +29,92 @@ import logging
 import requests
 import time
 
-c_private_key = ""
-"API secret"
 
-c_public_key = ""
-"API key"
-
-c_api_url = "https://api.bitcoin.de/v2"
+C_API_URL = "https://api.bitcoin.de/v2"
 "Base url for all calls"
 
-__credits = 20
+
+class BCdeSession(object):
+    def __init__(self, c_private_key, c_public_key, credits = 20):
+        self.c_private_key = c_private_key
+        self.c_public_key  = c_public_key
+        self.credits = credits
 
 
-def generate_api_signature(method, url, nonce, post_params):
-    """
-    Generate and return X-API-SIGNATURE according to
-    http://www.bitcoin.de/de/api/tapi/v2/docu
-    """
-    sorted_params = []
-    for key, val in post_params.items():
-        sorted_params.append("{}={}".format(key, val))
-    sorted_params.sort()
-    query_string = "?".join(sorted_params)
-    logging.debug("query_string: '{}' = {}".format(query_string, query_string.encode()))
-    hashed_query_string = hashlib.md5(query_string.encode()).hexdigest()
-    hmac_data = "{}#{}#{}#{}#{}".format(
-        method,
-        url,
-        c_public_key,
-        nonce,
-        hashed_query_string
-        )
-    logging.debug("hamc_data: %s", hmac_data)
+    def generate_api_signature(self, method, url, nonce, post_params):
+        """
+        Generate and return X-API-SIGNATURE according to
+        http://www.bitcoin.de/de/api/tapi/v2/docu
+        """
+        sorted_params = []
+        for key, val in post_params.items():
+            sorted_params.append("{}={}".format(key, val))
+        sorted_params.sort()
+        query_string = "?".join(sorted_params)
+        logging.debug("query_string: '{}' = {}".format(query_string, query_string.encode()))
+        hashed_query_string = hashlib.md5(query_string.encode()).hexdigest()
+        hmac_data = "{}#{}#{}#{}#{}".format(
+            method,
+            url,
+            self.c_public_key,
+            nonce,
+            hashed_query_string
+            )
+        logging.debug("hamc_data: %s", hmac_data)
 
-    return hmac.new(
-        c_private_key.encode(),
-        msg=hmac_data.encode(),
-        digestmod="sha256").hexdigest()
+        return hmac.new(
+            self.c_private_key.encode(),
+            msg=hmac_data.encode(),
+            digestmod="sha256").hexdigest()
 
+    def query(self, url, method="GET", post_params={}, headers={}):
+        """
+        method should be "GET", "POST", etc.
+        return: request object 
+        """
 
-def query(url, method="GET", post_params={}, headers={}):
-    """
-    method should be "GET", "POST", etc.
-    """
-    global __credits
+        if self.credits < 3:
+            logging.warning("Not enough credits (to high request frequency. Sleepingfor3seconds...")
+            time.sleep(3)
+        else:
+            logging.debug("We have at least %s credits", self.credits)
 
-    if __credits < 3:
-        logging.warning("Not enough credits (to high request frequency. Sleepingfor3seconds...")
-        time.sleep(3)
-    else:
-        logging.debug("We have at least %s credits", __credits)
+        headers['X-API-KEY'] = self.c_public_key
+        headers['X-API-NONCE'] = str(int(time.time()))
+        headers['X-API-SIGNATURE'] = self.generate_api_signature(
+            method, url, headers['X-API-NONCE'], post_params)
 
-    headers['X-API-KEY'] = c_public_key
-    headers['X-API-NONCE'] = str(int(time.time()))
-    headers['X-API-SIGNATURE'] = generate_api_signature(
-        method, url, headers['X-API-NONCE'], post_params)
+        logging.debug("headers={}".format(headers))
 
-    logging.debug("headers={}".format(headers))
-
-    r = requests.get(url, headers=headers)
-    logging.debug("Response %s = %s",
-                  r.status_code,
-                  r.reason)
+        r = requests.get(url, headers=headers)
+        logging.debug("Response %s = %s",
+                      r.status_code,
+                      r.reason)
 
 #    logging.debug("Content = %s", r.content)
 
-    if r.status_code == 200:
-        __credits = r.json()["credits"]
-        logging.debug("Credits left: %s", __credits)
+        if r.status_code == 200:
+            self.credits = r.json()["credits"]
+            logging.debug("Credits left: %s", self.credits)
 
-    return r
+        return r
 
 
-def get_public_trade_history(since_tid=None):
-    """
-    Query the btceur trade history and return the JSON answer.
-    Return None on error.
-    """
-    url = c_api_url + "/trades/history?trading_pair=btceur"
-    if since_tid:
-        url += "&since_tid={}".format(since_tid)
-        logging.debug("since_tid = %s", since_tid)
+    def get_public_trade_history(self, since_tid=None):
+        """
+        Query the btceur trade history and return the JSON answer.
+        Return None on error.
+        """
+        url = C_API_URL + "/trades/history?trading_pair=btceur"
+        if since_tid:
+            url += "&since_tid={}".format(since_tid)
+            logging.debug("since_tid = %s", since_tid)
 
-    r = query(url)
+        r = self.query(url)
 
-    if r.status_code != 200:
-        logging.error("Error getting trade history. Response %s", r.status_code)
-        return None
+        if r.status_code != 200:
+            logging.error("Error getting trade history. Response %s", r.status_code)
+            return None
 
-    return r.json()
+        return r.json()
+

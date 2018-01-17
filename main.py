@@ -35,19 +35,19 @@ def read_key_from_file(filename):
         return key_file.readline()
 
 
-def update_trades():
+def update_trades(db, api):
     """
     pre: set the public and private key for the api_call module.
     pre: initialise lite_dbconnection
     """
     logging.info("Updating trades DB...")
 
-    max_tid = lite_db.get_max_tid()
-    r = api_call.get_public_trade_history(max_tid)
+    max_tid = db.get_max_tid()
+    r = api.get_public_trade_history(max_tid)
     if not r:
         logging.error("Could not retrieve trade history")
         return
-    lite_db.insert_trades(r)
+    db.insert_trades(r)
 
 
 def main():
@@ -55,8 +55,6 @@ def main():
     server and performs (an) action(s) on all lists.
 
     """
-    global c_private_key
-    global c_public_key
 
     logger_cfg = {
         "level":
@@ -104,18 +102,17 @@ def main():
 
     print("Log messages above level: {}".format(logger_cfg["level"]))
 
-    api_call.c_private_key = read_key_from_file(args.secret)[:-1]
-    api_call.c_public_key = read_key_from_file(args.key)[:-1]
+    c_private_key = read_key_from_file(args.secret)[:-1]
+    c_public_key = read_key_from_file(args.key)[:-1]
 
-    logging.debug("public key: %s", api_call.c_public_key)
+    api = api_call.BCdeSession(c_private_key, c_public_key)
 
-    lite_db.init_connect_db(args.database_file)
+    with lite_db.DBCoin(args.database_file) as db:
+        logging.debug("public key: %s", api.c_public_key)
+        update_trades(db, api)
 
-    update_trades()
+        logging.debug("%s trades in DB", db.get_num_trades())
 
-    logging.debug("%s trades in DB", lite_db.get_num_trades())
-
-    lite_db.close()
     logging.info("[FINISHED]")
 
 
