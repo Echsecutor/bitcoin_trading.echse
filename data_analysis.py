@@ -23,14 +23,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import lite_db
 
 
-def get_percentiles_for_time_window(p_from, p_to, p_percentiles=[0,0.2, 0.4, 0.5,0.6,0.8,1], p_trading_pair="btceur", p_data_index=2):
+def get_percentiles_for_time_window(db, p_from, p_to, p_percentiles=[0,0.2, 0.4, 0.5,0.6,0.8,1], p_trading_pair="btceur", p_data_index=2):
     """Return a list of len = len(p_percentiles) the percentiles.
     I.e. the minimum values such that the given ratio of the data
     points are <= than the respective values.  In particular, the
     percentiles 0, 0.5 and 1 correspond to the minimum, median and
     maximum values.
     """
-    data = lite_db.get_trades_in_time_window(p_form,p_to, p_trading_pair)
+    data = db.get_trades_in_time_window(p_form,p_to, p_trading_pair)
     num = len(data)
     data.sort(key=lambda x: x[p_data_index])
     current_pos = 0
