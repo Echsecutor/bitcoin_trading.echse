@@ -1,4 +1,6 @@
-# bitcoin_de_trading_scripts
+[![Build Status](https://travis-ci.org/Echsecutor/bitcoin_de_trading_scripts.svg?branch=master)](https://travis-ci.org/Echsecutor/bitcoin_de_trading_scripts)
+
+# Bitcoin.de Trading Scripts
 This is a collection of simple python scripts utilizing the bitcoin.de trading API.
 
 Work in progress.
