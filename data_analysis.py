@@ -1,5 +1,5 @@
 """
-some simple data anaylysis of bitcoin trades data
+some simple p_data anaylysis of bitcoin trades p_data
 
 .. moduleauthor:: Sebastian Schmittner <sebastian@schmittner.pw>
 
@@ -20,29 +20,41 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-import lite_db
+import logging
 
 
-def get_percentiles_for_time_window(db, p_from, p_to, p_percentiles=[0,0.2, 0.4, 0.5,0.6,0.8,1], p_trading_pair="btceur", p_data_index=2):
-    """Return a list of len = len(p_percentiles) the percentiles.
-    I.e. the minimum values such that the given ratio of the data
+def get_percentiles(
+        p_data,
+        p_data_index=2,
+        p_percentiles_at=[0, 0.2, 0.4, 0.5, 0.6, 0.8, 1]):
+    """Return a list of len = len(p_percentiles_at) the percentiles.
+    I.e. the minimum values such that the given ratio of the p_data
     points are <= than the respective values.  In particular, the
     percentiles 0, 0.5 and 1 correspond to the minimum, median and
     maximum values.
-    """
-    data = db.get_trades_in_time_window(p_form,p_to, p_trading_pair)
-    num = len(data)
-    data.sort(key=lambda x: x[p_data_index])
-    current_pos = 0
-    percentile_at = int(p_percentiles[0] * num)
-    percentiles = []
-    for row in data:
-        if percentile_at <= current_pos:
-            percentiles.append(row[p_data_index])
-            percentile_at = int(p_percentiles[0] * num)
-            assert (percentile_at <= num)
-        current_pos += 1
 
-    assert(len(percentiles) == len(p_percentiles))
+    p_data should be something like
+    db.get_trades_in_time_window(p_from, p_to, p_trading_pair)
+    """
+    num = len(p_data)
+    p_percentiles_at.sort()
+    p_data.sort(key=lambda x: x[p_data_index])
+    current_pos = 0
+    percentile_at = int(p_percentiles_at[0] * num)
+    percentiles = []
+    for row in p_data:
+        current_pos += 1
+        while percentile_at <= current_pos:
+            percentiles.append(row[p_data_index])
+            if len(percentiles) < len(p_percentiles_at):
+                percentile_at = int(p_percentiles_at[len(percentiles)] * num)
+            else:
+                percentile_at = num + 1
+                break
+            assert (percentile_at <= num)
+
+    logging.debug("percentiles: %s\nfor data: %s\nare: %s",
+                  p_percentiles_at, p_data, percentiles)
+    assert(len(percentiles) == len(p_percentiles_at))
 
     return percentiles
