@@ -36,19 +36,18 @@ def read_key_from_file(filename):
         return key_file.readline()
 
 
-def update_trades(db, api):
+def update_trades(v_db, p_api):
     """
-    pre: set the public and private key for the api_call module.
-    pre: initialise lite_dbconnection
+    Get recent trades from bitcoin.de and store in DB.
     """
     logging.info("Updating trades DB...")
 
-    max_tid = db.get_max_tid()
-    r = api.get_public_trade_history(max_tid)
-    if not r:
+    max_tid = v_db.get_max_tid()
+    new_trades = p_api.get_public_trade_history(max_tid)
+    if not new_trades:
         logging.error("Could not retrieve trade history")
         return
-    db.insert_trades(r)
+    v_db.insert_trades(new_trades)
 
 
 def main():
@@ -86,8 +85,8 @@ def main():
     parser.add_argument(
         "-d",
         "--database-file",
-        help="Name of the sqllite db file to use",
-        default="bitcoin.db")
+        help="Name of the sqllite data_base file to use",
+        default="bitcoin.data_base")
 
     args = parser.parse_args()
 
@@ -108,11 +107,11 @@ def main():
 
     api = api_call.BCdeSession(c_private_key, c_public_key)
 
-    with lite_db.DBCoin(args.database_file) as db:
+    with lite_db.DBCoin(args.database_file) as data_base:
         logging.debug("public key: %s", api.c_public_key)
-        update_trades(db, api)
+        update_trades(data_base, api)
 
-        logging.debug("%s trades in DB", db.get_num_trades())
+        logging.debug("%s trades in DB", data_base.get_num_trades())
 
     logging.info("[FINISHED]")
 

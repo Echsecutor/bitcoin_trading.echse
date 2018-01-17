@@ -26,16 +26,18 @@ import logging
 def get_percentiles(
         p_data,
         p_data_index=2,
-        p_percentiles_at=[0, 0.2, 0.4, 0.5, 0.6, 0.8, 1]):
+        p_percentiles_at=None):
     """Return a list of len = len(p_percentiles_at) the percentiles.
     I.e. the minimum values such that the given ratio of the p_data
     points are <= than the respective values.  In particular, the
     percentiles 0, 0.5 and 1 correspond to the minimum, median and
-    maximum values.
+    maximum values. (This is the default.)
 
     p_data should be something like
     db.get_trades_in_time_window(p_from, p_to, p_trading_pair)
     """
+    if not p_percentiles_at:
+        p_percentiles_at = [0, 0.5, 1]
     num = len(p_data)
     p_percentiles_at.sort()
     p_data.sort(key=lambda x: x[p_data_index])
@@ -51,10 +53,10 @@ def get_percentiles(
             else:
                 percentile_at = num + 1
                 break
-            assert (percentile_at <= num)
+            assert percentile_at <= num
 
     logging.debug("percentiles: %s\nfor data: %s\nare: %s",
                   p_percentiles_at, p_data, percentiles)
-    assert(len(percentiles) == len(p_percentiles_at))
+    assert len(percentiles) == len(p_percentiles_at)
 
     return percentiles

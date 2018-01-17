@@ -28,10 +28,10 @@ TRADES_TABLE_NAME = "public_trade_history"
 
 
 TRADES_TABLE_COMUMNS = [("trading_pair", "text"),
-                          ("date", "text"),
-                          ("price", "real"),
-                          ("amount", "real"),
-                          ("tid", "INTEGER PRIMARY KEY")]
+                        ("date", "text"),
+                        ("price", "real"),
+                        ("amount", "real"),
+                        ("tid", "INTEGER PRIMARY KEY")]
 "const schema"
 
 TRADES_TABLE_COMUMNS_NAMES = "(" + ", ".join(x[0] for x in TRADES_TABLE_COMUMNS) + ")"
@@ -39,6 +39,7 @@ TRADES_TABLE_COMUMNS_NAMES = "(" + ", ".join(x[0] for x in TRADES_TABLE_COMUMNS)
 
 
 class DBCoin(object):
+    "Database connection object."
     def __init__(self, p_db_file_name):
         """
         Open/Create database and create schema, if necessary.
@@ -48,7 +49,9 @@ class DBCoin(object):
         # Create table if not existing
         create_query = "CREATE TABLE IF NOT EXISTS "
         create_query += TRADES_TABLE_NAME + "("
-        create_query += ", ".join(column_name + " " + column_type for (column_name, column_type) in TRADES_TABLE_COMUMNS)
+        create_query += ", ".join(column_name + " " + column_type
+                                  for (column_name, column_type)
+                                  in TRADES_TABLE_COMUMNS)
         create_query += ")"
 
         with self.connection:
@@ -85,23 +88,26 @@ class DBCoin(object):
                         trade_list.append(trade[column_name])
 
                 self.connection.execute("INSERT OR IGNORE INTO "
-                          + TRADES_TABLE_NAME
-                          + TRADES_TABLE_COMUMNS_NAMES
-                          + " VALUES (?,?,?,?,?)",
-                          trade_list)
+                                        + TRADES_TABLE_NAME
+                                        + TRADES_TABLE_COMUMNS_NAMES
+                                        + " VALUES (?,?,?,?,?)",
+                                        trade_list)
 
     def get_max_tid(self):
+        "latest transaction id"
         with self.connection:
-            return self.connection.execute("SELECT max(tid) FROM " + TRADES_TABLE_NAME).fetchone()[0]
-
+            return self.connection.execute(
+                "SELECT max(tid) FROM " + TRADES_TABLE_NAME).fetchone()[0]
 
     def get_trades_in_time_window(self, p_from, p_to, p_trading_pair="btceur"):
         """
         return all trades with from <= date < to
         """
         with self.connection:
-            return [row for row in self.connection.execute('SELECT * FROM ' + TRADES_TABLE_NAME + ' WHERE (date >= ? AND date < ?', (p_from, p_to))]
-
+            return [row for row in self.connection.execute(
+                'SELECT * FROM ' + TRADES_TABLE_NAME
+                + ' WHERE (date >= ? AND date < ? AND trading_pair = ?)',
+                (p_from, p_to, p_trading_pair))]
 
     def get_all_trades(self):
         """
@@ -109,9 +115,11 @@ class DBCoin(object):
         pre: __connection initialised
         """
         with self.connection:
-            return [row for row in self.connection.execute('SELECT * FROM ' + TRADES_TABLE_NAME)]
-
+            return [row for row in self.connection.execute(
+                'SELECT * FROM ' + TRADES_TABLE_NAME)]
 
     def get_num_trades(self):
+        "count rows"
         with self.connection:
-            return self.connection.execute("SELECT COUNT(tid) from " + TRADES_TABLE_NAME).fetchone()[0]
+            return self.connection.execute(
+                "SELECT COUNT(tid) from " + TRADES_TABLE_NAME).fetchone()[0]
