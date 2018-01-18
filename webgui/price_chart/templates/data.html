@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Bitcoin.de trades chart</title>
+    <meta charset="utf-8" />
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'main.css' %}" />
+  </head>
+  <body>
+
+    <h1>Update Data:</h1>
+    <form method="POST" action="#">
+      {% csrf_token %}
+      public key:<input name="key" size="32"/><br>
+      secret:<input name="sec" size="32"/><br>
+      <input type="submit"/>
+    </form>
+
+       <h1>Data in DB</h1>
+    {% if data %}
+    <table>
+      <tablehead>
+        <tr>
+          <th>TID</th>
+          <th>Trading</th>
+          <th>Date</th>
+          <th>Price</th>
+          <th>Amount</th>
+        </tr>
+      </tablehead>
+      <tablebody>
+        {% for transaction in data %}
+        <tr>
+          <td>{{ transaction.tid }}</td>
+          <td>{{ transaction.trading_pair }}</td>
+          <td>{{ transaction.date }}</td>
+          <td>{{ transaction.price }}</td>
+          <td>{{ transaction.amount }}</td>
+        </tr>
+        {% endfor %}
+      </tablebody>
+    </table>
+    {% else %}
+    <p>No transactions are available.</p>
+    {% endif %}
+
+
+  </body>
+</html>

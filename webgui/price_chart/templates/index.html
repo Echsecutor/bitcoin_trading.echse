@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+    <head>
+	<title>Bitcoin.de trades</title>
+	<meta charset="utf-8" />
+	{% load static %}
+	<link rel="stylesheet" type="text/css" href="{% static 'main.css' %}" />
+    </head>
+    <body>
+      <ul>
+	<li><a href="{% url 'chart' %}">Transactions Chart</a></li>
+	<li><a href="{% url 'data' %}">List of Transactions</a></li>
+      </ul>
+    </body>
+</html>
+
+

@@ -116,6 +116,8 @@ class BCdeSession(object):
 
         response = self.query(url)
 
+        logging.debug("response = %s", response.content)
+
         if response.status_code != 200:
             logging.error("Error getting trade history. Response %s", response.status_code)
             return None

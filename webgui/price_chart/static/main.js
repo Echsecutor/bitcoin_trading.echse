@@ -5,7 +5,7 @@
 var chart;
 
 function sampleData(){
-  var data={
+  var sample_data={
     datasets: [
       {
         fill: '+1',
@@ -28,7 +28,7 @@ function sampleData(){
   for (var i = 0; i < 6; i++)
   {
     var x = 0;
-    data.datasets.forEach(function(ds)
+    sample_data.datasets.forEach(function(ds)
                           {
                             x += Math.random();;
                             ds.data.push(x);
@@ -36,9 +36,9 @@ function sampleData(){
                          );
   }
   
-  data.labels= ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+  sample_data.labels= ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
 
-  return data;
+  return sample_data;
 }
 
 function loadChart(){
