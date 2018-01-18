@@ -5,6 +5,14 @@ This is a collection of simple python scripts utilizing the bitcoin.de trading A
 
 Work in progress.
 
+As usual with Django, run
+```
+python3 manage.py makemigrations
+python3 manage.py migrate
+python3 manage.py runserver
+```
+to bring up the development webserver.
+
 ## License
 
 Copyright 2018 Sebastian Schmittner <sebastian@schmittner.pw>
