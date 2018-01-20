@@ -17,10 +17,11 @@ def index(request):
 
 
 def chart(request):
-    data = Transaction.objects.order_by('tid')
+    data = Transaction.objects.order_by('tid').values_list("date", "price")
     context = {
-        'data': [row for row in data],
-    }
+            'labels': [str(x[0]) for x in data],
+            'data': [str(x[1]) for x in data]
+            }
     return render(request, 'chart.html', context)
 
 
