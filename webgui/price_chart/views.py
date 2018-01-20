@@ -7,6 +7,8 @@ import logging
 
 from . import api_call
 
+from datetime import datetime, timezone
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,19 +37,19 @@ def data(request):
         new_trades = api.get_public_trade_history(max_tid)
         logger.debug("Api returned %s", new_trades)
 
-        for row in new_trades['trades']:
-            insert = Transaction(
-                tid=row['tid'],
-                date=row['date'],
-                price=row['price'],
-                amount=row['amont'],
-                trading_pair=new_trades['trading_pair']
-            )
-            insert.save()
+        if new_trades is not None:
+            for row in new_trades['trades']:
+                timestamp = datetime.fromtimestamp(float(row['date']))
+                insert = Transaction(
+                    tid=row['tid'],
+                    date=timestamp.replace(tzinfo=timezone.utc),
+                    price=row['price'],
+                    amount=row['amount'],
+                    trading_pair=new_trades['trading_pair']
+                )
+                insert.save()
 
     # reder all data in DB
     data = Transaction.objects.order_by('tid')
-    context = {
-        'data': data,
-    }
+    context = {'data' : data}
     return render(request, 'data.html', context)
