@@ -41,7 +41,7 @@ function sampleData(){
   return sample_data;
 }
 
-function loadChart(){
+function loadChart(labels, data){
   var ctx = $("#chart");
 
   var options = {
@@ -65,7 +65,12 @@ function loadChart(){
 
   chart = new Chart(ctx, {
     type: 'line',
-    data: sampleData(),
+    data: {labels: labels,
+        datasets: [{
+            label: 'Price',
+            data: data
+        }],
+    },
     options: options
   });
 
@@ -77,10 +82,3 @@ function setSampleData(){
   chart.update();
 }
 
-
-$(function(){
-  loadChart();
-
-  //for fun ;)
-  $(".chart-container").click(setSampleData);
-});

@@ -26,7 +26,7 @@ import argparse
 from http.client import HTTPConnection
 import logging
 
-import api_call
+import webgui.price_chart.api_call as api_call
 import lite_db
 
 
@@ -105,7 +105,7 @@ def main():
     c_private_key = read_key_from_file(args.secret)[:-1]
     c_public_key = read_key_from_file(args.key)[:-1]
 
-    api = api_call.BCdeSession(c_private_key, c_public_key)
+    api = api_call.BCdeSession(c_public_key, c_private_key)
 
     with lite_db.DBCoin(args.database_file) as data_base:
         logging.debug("public key: %s", api.c_public_key)
