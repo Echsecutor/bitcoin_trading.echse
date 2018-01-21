@@ -1,0 +1,51 @@
+{% load static %}<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>
+      {% block title %}Bitcoin.de API{% endblock %}
+      -
+      {% block subtitle %}Bitcoin.de API{% endblock %}
+    </title>
+    <link rel="stylesheet" type="text/css" href="{% static 'main.css' %}">
+    {% block stylesheet %}{% endblock %}
+    <script src="{% static 'jquery-3.2.1.min.js' %}"></script>
+  </head>
+  <body>
+    <header>
+      <nav>
+	<ul>
+	  <li><a href="{% url 'chart' %}">Transactions Chart</a></li>
+	  <li><a href="{% url 'data' %}">List of Transactions</a></li>
+	</ul>
+      </nav>
+      <h1>Update Data:</h1>
+      <form method="POST" action="#" id="refresh_form">
+	{% csrf_token %}
+	<table>
+	  <tbody>
+	    <tr>
+	      <td><label for="key">public key:</label></td>
+	      <td><input name="key" size="32"/></td>
+	    </tr>
+	    <tr>
+	      <td><label for="sec">secret:</label></td>
+	      <td><input type="password" name="sec" size="32"/></td>
+	    </tr>
+	  </tbody>
+	</table>
+	<input type="submit"/>
+	<span id="refresh_msg"></span>
+      </form>
+      <script src="{% static 'refresh_form.js' %}"></script>
+    </header>
+    <main>
+      {% block content %}
+      {% endblock %}
+    </main>
+    <footer>
+      <a href="https://github.com/Echsecutor/bitcoin_de_trading_scripts">Fork me on GitHub</a>
+    </footer>
+    {% block javascript %}{% endblock %}
+  </body>
+</html>

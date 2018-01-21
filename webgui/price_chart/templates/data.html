@@ -1,49 +1,34 @@
-<!doctype html>
-<html>
-  <head>
-    <title>Bitcoin.de trades chart</title>
-    <meta charset="utf-8" />
-    {% load static %}
-    <link rel="stylesheet" type="text/css" href="{% static 'main.css' %}" />
-  </head>
-  <body>
+{% extends 'base.html' %}
 
-    <h1>Update Data:</h1>
-    <form method="POST" action="#">
-      {% csrf_token %}
-      public key:<input name="key" size="32"/><br>
-      secret:<input name="sec" size="32"/><br>
-      <input type="submit"/>
-    </form>
-       <h1>Data in DB</h1>
-       {% if data %}
-       Showing {{ data|length }} of {{ num_total }} transactions:
-    <table>
-      <tablehead>
-        <tr>
-          <th>TID</th>
-          <th>Trading</th>
-          <th>Date</th>
-          <th>Price</th>
-          <th>Amount</th>
-        </tr>
-      </tablehead>
-      <tablebody>
-        {% for transaction in data %}
-        <tr>
-          <td>{{ transaction.tid }}</td>
-          <td>{{ transaction.trading_pair }}</td>
-          <td>{{ transaction.date }}</td>
-          <td>{{ transaction.price }}</td>
-          <td>{{ transaction.amount }}</td>
-        </tr>
-        {% endfor %}
-      </tablebody>
-    </table>
-    {% else %}
-    <p>No transactions are available.</p>
-    {% endif %}
+{% block subtitle %}Data List{% endblock %}
 
-
-  </body>
-</html>
+{% block content %}
+<h1>Data in DB</h1>
+{% if data %}
+Showing {{ data|length }} of {{ num_total }} transactions:
+<table>
+  <thead>
+    <tr>
+      <th>TID</th>
+      <th>Trading</th>
+      <th>Date</th>
+      <th>Price</th>
+      <th>Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for transaction in data %}
+    <tr>
+      <td>{{ transaction.tid }}</td>
+      <td>{{ transaction.trading_pair }}</td>
+      <td>{{ transaction.date }}</td>
+      <td>{{ transaction.price }}</td>
+      <td>{{ transaction.amount }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No transactions are available.</p>
+{% endif %}
+{% endblock %}

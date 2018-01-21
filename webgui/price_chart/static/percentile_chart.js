@@ -1,5 +1,3 @@
-// example script using chartjs
-
 "use strict";
 
 var chart;

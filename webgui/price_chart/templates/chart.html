@@ -1,26 +1,24 @@
-<!doctype html>
-<html>
-    <head>
-	<title>Bitcoin.de trades chart</title>
-	<meta charset="utf-8" />
-	{% load static %}
-	<script src="{% static 'jquery-3.2.1.min.js' %}"></script>
-	<script src="{% static 'Chart.bundle.min.js' %}"></script>
-	<link rel="stylesheet" type="text/css" href="{% static 'main.css' %}" />
-    </head>
-    <body>
-	<div class="chart-container" style="position: relative; height:90vh; width:90vw">
-	    <canvas id="chart"></canvas>
-	</div>
-	<script src="{% static 'main.js' %}"></script>
-    <script>
-        var labels = {{ labels|safe }}
-        var data = {{ data|safe }}
-        $(function(){
-            loadChart(labels, data)
-            //for fun ;)
-            //$(".chart-container").click(setSampleData); NO FUN!
-        });
-    </script>
-    </body>
-</html>
+{% extends 'base.html' %}
+
+{% load staticfiles %}
+
+{% block subtitle %}Chart{% endblock %}
+
+{% block content %}
+<div class="chart-container" style="position: relative; height:90vh; width:90vw">
+  <canvas id="chart"></canvas>
+</div>
+{% endblock %}
+
+  
+{% block javascript %}
+<script src="{% static 'Chart.bundle.min.js' %}"></script>
+<script src="{% static 'percentile_chart.js' %}"></script>
+<script>
+  var labels = {{ labels|safe }}
+  var data = {{ data|safe }}
+  $(function(){
+  loadChart(labels, data)
+  });
+</script>
+{% endblock %}
