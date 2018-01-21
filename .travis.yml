@@ -1,7 +1,6 @@
 language: python
 env:
-#  - TEST_JOB="find -iname '*.py' | xargs pylint --disable=R,C"
-  - TEST_JOB="pylint"
+  - TEST_JOB="find -iname '*.py' | xargs pylint --disable=R,C"
   - TEST_JOB="pytest --log-leve=DEBUG"
 python:
   - "3.6"
