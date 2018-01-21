@@ -1,6 +1,8 @@
 language: python
+env:
+  - TEST_JOB="pylint *.py"
+  - TEST_JOB="pytest --log-leve=DEBUG"
 python:
   - "3.6"
 script:
-  - pylint *.py
-  - pytest --log-leve=DEBUG
+  - $TEST_JOB
