@@ -15,9 +15,9 @@
       secret:<input name="sec" size="32"/><br>
       <input type="submit"/>
     </form>
-
        <h1>Data in DB</h1>
-    {% if data %}
+       {% if data %}
+       Showing {{ data|length }} of {{ num_total }} transactions:
     <table>
       <tablehead>
         <tr>
