@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 from . import data_analysis
+import datetime
+import random
+import itertools
 
 
 def test_get_percentiles():
@@ -64,3 +67,32 @@ def test_get_percentiles():
                                                 data_index,
                                                 percentiles_at)
     assert percentiles == [5, 5, 5, 6, 6]
+
+
+def test_bin_dated_data():
+    """
+    Generate some random dated data and bin it.
+    """
+    data = [
+        (datetime.datetime(*dt), random.random())
+        for dt in itertools.product(
+                (2018, ),
+                (1, 2),
+                range(1, 25),
+                range(0, 23),
+                range(0, 59, 3),
+                range(0, 59, 7))
+    ]
+
+    data.sort(key=lambda x: x[0])
+    delta = datetime.timedelta(days=1)
+    bins = data_analysis.bin_dated_data(data, 0, delta)
+
+    assert abs(data[0][0] - data[bins[0] - 1][0]) <= delta
+    assert abs(data[0][0] - data[bins[0]][0]) > delta
+
+    for i in range(1, len(bins)):
+        assert abs(data[bins[i-1]][0] - data[bins[i]-1][0]) <= delta
+        assert abs(data[bins[i-1]][0] - data[bins[i]][0]) > delta
+
+    assert abs(data[len(data)-1][0] - data[bins[len(bins)-1]][0]) <= delta

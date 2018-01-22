@@ -7,7 +7,7 @@ from django.http import JsonResponse
 
 import logging
 
-from . import api_call
+from . import api_call, data_analysis
 from .models import Transaction
 
 logger = logging.getLogger(__name__)
@@ -19,6 +19,7 @@ def index(request):
 
 def chart(request):
     db_data = Transaction.objects.order_by('tid').values_list("date", "price")
+    
     context = {
             'labels': [str(x[0]) for x in db_data],
             'data': [str(x[1]) for x in db_data]
