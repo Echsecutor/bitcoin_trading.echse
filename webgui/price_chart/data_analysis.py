@@ -30,9 +30,8 @@ def bin_dated_data(p_data,
     """@pre: p_data is sorted by index p_date_index
 
     Return the list of indices of the bin borders.
-    I.e. the bins are
-    [:bin_border[0]-1], ..., [bin_border[i]:bin_border[i+1]-1],...
-    [bin_border[len(bin_border)-1]:]
+    I.e. the bins are [bin_border[i]:bin_border[i+1]-1]
+    where bin_border[0]=0 and bin_border[len(bin_border)-1] = len(p_data)
 
     @post: Within each bin, the maximal datetime difference is
     guaranteed to be <= p_bin_width.
@@ -40,7 +39,7 @@ def bin_dated_data(p_data,
     @post: p_data[bin_border[i+1]][p_date_index] - p_data[bin_border[i]][p_date_index] > p_bin_width
 
     """
-    bin_border = []
+    bin_border = [0, ]
     last_bin_at = 0
     i = 0
     # todo: speedup by using binary search
@@ -52,6 +51,7 @@ def bin_dated_data(p_data,
             bin_border.append(i)
             last_bin_at = i
         i += 1
+    bin_border.append(len(p_data))
     return bin_border
 
 

@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.db import transaction
 from django.db.models import Max
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from django.http import JsonResponse
 
@@ -18,12 +18,34 @@ def index(request):
 
 
 def chart(request):
-    db_data = Transaction.objects.order_by('tid').values_list("date", "price")
-    
-    context = {
-            'labels': [str(x[0]) for x in db_data],
-            'data': [str(x[1]) for x in db_data]
+    db_data = [(x[0], x[1]) for x in Transaction.objects.order_by('tid').values_list("date", "price")]
+    db_data.sort(key=lambda x: x[0])
+    # todo: UI
+    delta = timedelta(days=1)
+    bins = data_analysis.bin_dated_data(db_data, 0, delta)
+    percentiles_at = [0, 0.3, 0.5, 0.7, 1.0]
+    percentiles = [
+        data_analysis.get_percentiles(
+            db_data[bins[i]:bins[i+1]-1],
+            p_data_index=1,
+            p_percentiles_at=percentiles_at)
+        for i in range(0, len(bins)-1)
+    ]
+    chart_data = {
+        "labels": [str(db_data[b][0]) for b in bins[:-2]],
+        "datasets": [
+            {
+                "fill": "+1",
+                "label": "p" + str(percentiles_at[i]),
+                "data": [float(x) for x in percentiles[:][i]]
             }
+            for i in range(0, len(percentiles_at))
+            ]
+    }
+
+    context = {
+        "chart_data": chart_data
+    }
     return render(request, 'chart.html', context)
 
 

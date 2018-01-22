@@ -88,11 +88,10 @@ def test_bin_dated_data():
     delta = datetime.timedelta(days=1)
     bins = data_analysis.bin_dated_data(data, 0, delta)
 
-    assert abs(data[0][0] - data[bins[0] - 1][0]) <= delta
-    assert abs(data[0][0] - data[bins[0]][0]) > delta
-
-    for i in range(1, len(bins)):
-        assert abs(data[bins[i-1]][0] - data[bins[i]-1][0]) <= delta
-        assert abs(data[bins[i-1]][0] - data[bins[i]][0]) > delta
-
-    assert abs(data[len(data)-1][0] - data[bins[len(bins)-1]][0]) <= delta
+    assert bins[0] == 0
+    assert bins[-1] == len(data)
+    
+    for i in range(0, len(bins) - 1):
+        assert abs(data[bins[i]][0] - data[bins[i+1]-1][0]) <= delta
+        if i > 0:
+            assert abs(data[bins[i-1]][0] - data[bins[i]][0]) > delta
