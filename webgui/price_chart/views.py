@@ -18,10 +18,10 @@ def index(request):
 
 
 def chart(request):
-    data = Transaction.objects.order_by('tid').values_list("date", "price")
+    db_data = Transaction.objects.order_by('tid').values_list("date", "price")
     context = {
-            'labels': [str(x[0]) for x in data],
-            'data': [str(x[1]) for x in data]
+            'labels': [str(x[0]) for x in db_data],
+            'data': [str(x[1]) for x in db_data]
             }
     return render(request, 'chart.html', context)
 
@@ -59,7 +59,8 @@ def retrieve_data_from_api(request):
             'status': 200,
             'inserted': num_inserted
         })
-    except Exception as ex:
+    # todo: more specific catches/error codes
+    except Exception as ex:  #pylint: disable=W
         return JsonResponse({
             'status': 500,
             'msg': str(ex)
@@ -68,8 +69,8 @@ def retrieve_data_from_api(request):
 
 def data(request):
     # reder all data in DB
-    data = Transaction.objects.order_by('tid')
-    data_list = [row for row in data]
+    data_db = Transaction.objects.order_by('tid')
+    data_list = [row for row in data_db]
     # do only show the last 100
     # 2 do: use a proper data table instead
     context = {

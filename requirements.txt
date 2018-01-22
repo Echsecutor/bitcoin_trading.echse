@@ -10,6 +10,8 @@ mccabe==0.6.1
 pluggy==0.6.0
 py==1.5.2
 pylint==1.8.1
+pylint-django==0.8.0
+pylint-plugin-utils==0.2.6
 pytest==3.3.2
 pytz==2017.3
 requests==2.18.4
