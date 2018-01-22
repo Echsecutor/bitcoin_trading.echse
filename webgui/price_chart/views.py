@@ -37,11 +37,12 @@ def chart(request):
             {
                 "fill": "+1",
                 "label": "p" + str(percentiles_at[i]),
-                "data": [float(x) for x in percentiles[:][i]]
+                "data": [float(x[i]) for x in percentiles]
             }
             for i in range(0, len(percentiles_at))
             ]
     }
+    chart_data["datasets"][-1]["fill"] = "0"
 
     context = {
         "chart_data": chart_data
