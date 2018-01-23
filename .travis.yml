@@ -1,6 +1,6 @@
 language: python
 env:
-  - TEST_JOB="find ./webgui/ -iname '*.py' | xargs pylint --load-plugins pylint_django --disable=R,C"
+  - TEST_JOB="pylint.sh"
   - TEST_JOB="pytest --log-leve=DEBUG"
 python:
   - "3.6"
