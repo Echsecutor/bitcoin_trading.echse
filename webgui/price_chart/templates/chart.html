@@ -15,10 +15,8 @@
 <script src="{% static 'Chart.bundle.min.js' %}"></script>
 <script src="{% static 'percentile_chart.js' %}"></script>
 <script>
-  var labels = {{ labels|safe }}
-  var data = {{ data|safe }}
   $(function(){
-  loadChart(labels, data)
+  loadChart({{ chart_data|safe }})
   });
 </script>
 {% endblock %}
