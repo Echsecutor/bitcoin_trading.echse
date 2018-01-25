@@ -1,6 +1,19 @@
 "use strict";
 
 $(function(){
+
+  var key_form_visible = false;
+  $("#api_key_form_toggle").button( {
+    icon: "ui-icon-gear"
+  } ).click(function(){
+    if (key_form_visible){
+      $("#refresh_form").hide( "fold", 1000 );
+    }else{
+      $("#refresh_form").show( "fold", 1000 );
+    }
+    key_form_visible = !key_form_visible;
+  });
+
   $("#refresh_form").on( "submit", function( event ) {
     event.preventDefault();
     var refresh_form = this;
