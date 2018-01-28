@@ -108,8 +108,9 @@ def data(request):
     data_list = [row for row in data_db]
     # do only show the last 100
     # 2 do: use a proper data table instead
-    return JsonResponse({
+    context = {
         'status': 200,
         'data': data_list[-100:],
         'num_total': len(data_list)
-    })
+    }
+    return render(request, "data_table.html", context)

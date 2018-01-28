@@ -46,44 +46,16 @@
 	  </li>
         </ul>
         <div id="charts-tab">
-          <div class="chart-container" style="position: relative; height:90vh; width:90vw">
+	  <span id="chart_spinner" class='spinner'></span><span id="chart_msg" class='msg'></span>
+          <div id="chart_container">
             <canvas id="chart"></canvas>
           </div>
-          <script src="{% static 'Chart.bundle.min.js' %}"></script>
-          <script src="{% static 'percentile_chart.js' %}"></script>
-          <script>
-            $(function(){
-            loadChart({{ chart_data|safe }})
-            });
-          </script>
 
-          {% if data %}
-          Showing {{ data|length }} of {{ num_total }} transactions:
-          <table>
-            <thead>
-              <tr>
-                <th>TID</th>
-                <th>Trading</th>
-                <th>Date</th>
-                <th>Price</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for transaction in data %}
-              <tr>
-                <td>{{ transaction.tid }}</td>
-                <td>{{ transaction.trading_pair }}</td>
-                <td>{{ transaction.date }}</td>
-                <td>{{ transaction.price }}</td>
-                <td>{{ transaction.amount }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-          {% else %}
-          <p>No transactions in database.</p>
-          {% endif %}
+	  <div id="data_table">
+	  </div>
+	  
+	  <script src="{% static 'Chart.bundle.min.js' %}"></script>
+          <script src="{% static 'percentile_chart.js' %}"></script>
 
         </div>
       </div>
