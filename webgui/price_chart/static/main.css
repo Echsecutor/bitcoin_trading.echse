@@ -1,6 +1,27 @@
 
+body{
+    background:black;
+}
 
 footer{
     margin-top:20px;
     text-align:center;
+}
+
+.ui-widget-content{
+    background:black;
+}
+
+
+.spinner{
+    width:16px;
+    height:16px;
+    visibility:hidden;
+    background-image:url("spinner.gif");
+    display: inline-block;
+    margin-right: 10px;
+}
+
+#tab_button{
+    float:right;
 }

@@ -12,27 +12,6 @@
   </head>
   <body>
     <header>
-      <div id="api_key">
-        <button id="api_key_form_toggle">Connect to Bitcoin.de</button>
-        <form method="POST" action="#" id="refresh_form" style="display:none;">
-          {% csrf_token %}
-          <table>
-            <tbody>
-              <tr>
-                <td><label for="key">public key:</label></td>
-                <td><input name="key" size="32"/></td>
-              </tr>
-              <tr>
-                <td><label for="sec">secret:</label></td>
-                <td><input type="password" name="sec" size="32"/></td>
-              </tr>
-            </tbody>
-          </table>
-          <input type="submit"/>
-          <span id="refresh_msg"></span>
-        </form>
-        <script src="{% static 'refresh_form.js' %}"></script>
-      </div>
     </header>
     <main>
 
@@ -40,6 +19,31 @@
         <ul>
           <li><a href="#charts-tab">Charts</a></li>
           <li><a href="trading.html">Trading</a></li>
+
+	  <li id="tab_button">
+	                <div id="api_key">
+              <button id="api_key_form_toggle">Connect to Bitcoin.de</button>
+              <form method="POST" action="#" id="refresh_form" style="display:none;">
+                {% csrf_token %}
+                <table>
+                  <tbody>
+                    <tr>
+                      <td><label for="key">public key:</label></td>
+                      <td><input name="key" size="32"/></td>
+                    </tr>
+                    <tr>
+                      <td><label for="sec">secret:</label></td>
+                      <td><input type="password" name="sec" size="32"/></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <input type="submit" tabindex="-1" style="position:absolute; top:-1000px"/>
+                <span class="spinner" ></span><span id="refresh_msg"></span>
+              </form>
+              <script src="{% static 'refresh_form.js' %}"></script>
+            </div>
+
+	  </li>
         </ul>
         <div id="charts-tab">
           <div class="chart-container" style="position: relative; height:90vh; width:90vw">

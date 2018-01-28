@@ -58,7 +58,15 @@ def retrieve_data_from_api(request):
     try:
         num_inserted = 0
         logger.info("Retrieving new transactions from API.")
-        api = api_call.BCdeSession(request.POST['key'], request.POST['sec'])
+
+        key, sec = request.POST['key'], request.POST['sec']
+        if not key or not sec:
+            return JsonResponse({
+                'status': 400,
+                'msg': "API key incomplete or missing."
+            })
+
+        api = api_call.BCdeSession(key, sec)
         max_tid = 0
         max_tid_agg = Transaction.objects.all().aggregate(Max('tid'))
         if max_tid_agg:
