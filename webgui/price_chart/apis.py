@@ -30,16 +30,13 @@ import time
 import requests
 
 
-C_API_URL = "https://api.bitcoin.de/v2"
-"Base url for all calls"
-
-
 class BCdeSession(object):
-    "API Wrapper"
+    """API Wrapper"""
     def __init__(self, c_public_key, c_private_key, api_credits=20):
         self.c_private_key = c_private_key
         self.c_public_key = c_public_key
         self.api_credits = api_credits
+        self.C_API_URL = "https://api.bitcoin.de/v2"
 
     def generate_api_signature(self, method, url, nonce, post_params=None):
         """
@@ -109,7 +106,7 @@ class BCdeSession(object):
         Query the btceur trade history and return the JSON answer.
         Return None on error.
         """
-        url = C_API_URL + "/trades/history?trading_pair=btceur"
+        url = self.C_API_URL + "/trades/history?trading_pair=btceur"
         if since_tid:
             url += "&since_tid={}".format(since_tid)
             logging.debug("since_tid = %s", since_tid)
@@ -123,3 +120,107 @@ class BCdeSession(object):
             return None
 
         return response.json()
+
+
+class BaseQuerry(object):
+    def __query_url(self, url):
+        response = requests.get(url, "GET")
+        if response.status_code != 200:
+            logging.error("Error getting info. Response %s", response.status_code)
+            return None
+        else:
+            return response
+
+    def __query_json(self, url):
+        response = self.__query_url(url)
+        else:
+            try:
+                return response.json()
+            except:
+                logging.error("Could not parse json")
+                return None
+
+
+class Shapeshift(BaseQuerry):
+    """See https://info.shapeshift.io/api"""
+    def __init__(self, api_key=None):
+        self.API_BASE_URL = "https://shapeshift.io"
+        self.api_key = api_key
+
+    def get_marketinfo(self, pair=None):
+        """If none is given, return dict of all pairs"""
+        url = API_BASE_URL + "/marketinfo/"
+        url += pair or ""
+        response = self.__query_json(url)
+
+        if response is None:
+            return None
+        else:
+            if "error" in response 
+                logging.error("Error getting market info. Respinse %s", response["error"])
+                return None
+
+            return resp_json
+
+    def recent_trx(self, max_trans=50):
+        """Get the most recent max_trans transactions. max_trans must be in [1,50]"""
+        if max_trans not in range(51):
+            logging.error("max_trans must be in [1, 50]. %s given.", max_trans)
+            return None
+        url = self.API_BASE_URL + "/recenttx/" + str(max_trans)
+        return self.__query_json(url)
+
+
+class BitcoinCharts(BaseQuerry):
+    """See https://bitcoincharts.com/about/markets-api/"""
+    def __init__(self):
+        self.API_BASE_URL = "http://api.bitcoincharts.com/v1"
+
+    def weighted_prices(self):
+        """Get json of weighted prices in differen currencies"""
+        url = self.API_BASE_URL + "/weighted_prices.json"
+        return self.__query(url)
+
+    def market_data(self):
+        url = self.API_BASE_URL + "/markets.json"
+        return self.__query_json(url)
+
+    def historic_trade_data(self, symbol, starttime=None):
+        """Get historic trade data. Symbol can be obtained from market_data. starttime is a Unixtimestamp.
+        Returns a list of dicts
+        The full history can be downloaded as gz cvs files from http://api.bitcoincharts.com/v1/csv/"""
+        url = self.API_BASE_URL + "/trades.csv?symbol=" + symbol
+        if starttime:
+            url += r"&start=" + str(starttime)
+        response = self.__query_url(url)
+        list_cvs = map(lambda x: list(map(lambda y: float(y), x.split(","))) ,response.split("\n"))
+        return [{
+            "timestamp": x[0],
+            "price": x[1],
+            "amount": x[2]} for x in list_cvs ]
+
+class XCrypto(BaseQuerry):
+    """See https://x-crypto.com/_cc_api.php"""
+    def __init__(self):
+        self.API_BASE_URL = "https://x-crypto.com/api"
+
+    def ticker(self, currency1="btc", currency2="eur"):
+        url = self.API_BASE_URL + "/" + currency1 + "/" + currency2
+        response = self.__query_url(url)
+        if "Error" in response.text:
+            logging.error("Error while accessing data: %s", response.text)
+        try:
+            return response.json()
+        except:
+            return None
+
+    def orderbook(self, currency1="btc", currency2="eur", maxlist=None):
+        url = self.API_BASE_URL + "/orderbook/" + currency1 + "/" + currency2 + "/"
+        url += maxlist or ""
+        return self.__query_json(url)
+
+    def trades(self, currency1="btc", currency2="eur", maxtrades=None):
+        url = self.API_BASE_URL + "/trades/" + currency1 + "/" + currency1
+        url += maxtrades or ""
+        return self.__query_json(url)
+
