@@ -2,7 +2,8 @@
 
 var chart;
 
-function loadChart(chart_data){
+//
+function init_chart(){
   var ctx = $("#chart");
 
   var options = {
@@ -19,17 +20,71 @@ function loadChart(chart_data){
     elements: {
       line: {
         // interpolation
-	tension: 0.000001
+        tension: 0.000001
       }
     }
   };
 
   chart = new Chart(ctx, {
     type: 'line',
-    data: chart_data,
+    data: {},
     options: options
   });
 
-  console.log(chart.data);
 }
 
+function load_chart(chart_data){
+
+  $.ajax({
+    type: "GET",
+    url: "/chart",
+    beforeSend: function(jqXHR, settings ){
+      $("#chart_spinner").css("visibility", "visible");
+    },
+    error: function(jqXHR, textStatus, errorThrown ){
+      $("#chart_msg").text("Ajax Error: " + textStatus + ": " + errorThrown);
+    },
+    success: function(data, textStatus)
+    {
+      chart.data = data.chart_data;
+      chart.render();
+      console.log("new chart data:");
+      console.log(chart.data);
+    },
+    complete: function(){
+      $("#chart_spinner").css("visibility", "hidden");
+    }
+  });
+
+}
+
+
+
+
+// fetching html
+function load_data_table(){
+
+  $.ajax({
+    type: "GET",
+    url: "/data",
+    beforeSend: function(jqXHR, settings ){
+      $("#data_table").prepend($("<span class='spinner'></span>").css("visibility", "visible"));
+    },
+    error: function(jqXHR, textStatus, errorThrown ){
+      $("#data_table").text("Ajax Error: " + textStatus + ": " + errorThrown);
+    },
+    success: function(data, textStatus)
+    {
+      $("#data_table").html(data);
+    }
+  });
+}
+
+
+
+$(function () {
+  init_chart();
+  load_chart();
+
+  load_data_table();
+});

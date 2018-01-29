@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 def index(request):
+    """This is the only full page view rendering all containers.
+    Content is added by ajax requests.
+    """
     return render(request, 'index.html')
 
 
@@ -44,10 +47,10 @@ def chart(request):
     }
     chart_data["datasets"][-1]["fill"] = "0"
 
-    context = {
+    return JsonResponse({
+        'status': 200,
         "chart_data": chart_data
-    }
-    return render(request, 'chart.html', context)
+    })
 
 
 def retrieve_data_from_api(request):
@@ -55,7 +58,15 @@ def retrieve_data_from_api(request):
     try:
         num_inserted = 0
         logger.info("Retrieving new transactions from API.")
-        api = api_call.BCdeSession(request.POST['key'], request.POST['sec'])
+
+        key, sec = request.POST['key'], request.POST['sec']
+        if not key or not sec:
+            return JsonResponse({
+                'status': 400,
+                'msg': "API key incomplete or missing."
+            })
+
+        api = api_call.BCdeSession(key, sec)
         max_tid = 0
         max_tid_agg = Transaction.objects.all().aggregate(Max('tid'))
         if max_tid_agg:
@@ -98,7 +109,8 @@ def data(request):
     # do only show the last 100
     # 2 do: use a proper data table instead
     context = {
+        'status': 200,
         'data': data_list[-100:],
         'num_total': len(data_list)
     }
-    return render(request, 'data.html', context)
+    return render(request, "data_table.html", context)

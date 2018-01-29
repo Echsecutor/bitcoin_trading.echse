@@ -1,11 +1,5 @@
-{% extends 'base.html' %}
-
-{% block subtitle %}Data List{% endblock %}
-
-{% block content %}
-<h1>Data in DB</h1>
 {% if data %}
-Showing {{ data|length }} of {{ num_total }} transactions:
+<p>Showing {{ data|length }} of {{ num_total }} transactions:</p>
 <table>
   <thead>
     <tr>
@@ -29,6 +23,5 @@ Showing {{ data|length }} of {{ num_total }} transactions:
   </tbody>
 </table>
 {% else %}
-<p>No transactions are available.</p>
+<p>No transactions in database.</p>
 {% endif %}
-{% endblock %}

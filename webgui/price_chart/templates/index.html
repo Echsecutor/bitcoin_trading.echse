@@ -1,11 +1,69 @@
-{% extends 'base.html' %}
+{% load static %}<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>BitcoinTrading.echse</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'jquery-ui.min.css' %}">
 
-{% block subtitle %}Index{% endblock %}
+    <link rel="stylesheet" type="text/css" href="{% static 'main.css' %}">
 
-{% block content %}
-Somebody should design this whole app! ;)
-{% endblock %}
+    <script src="{% static 'jquery-3.2.1.min.js' %}"></script>
+    <script src="{% static 'jquery-ui.min.js' %}"></script>
+  </head>
+  <body>
+    <header>
+    </header>
+    <main>
 
-  
-{% block javascript %}
-{% endblock %}
+      <div id="tabs">
+        <ul>
+          <li><a href="#charts-tab">Charts</a></li>
+          <li><a href="trading.html">Trading</a></li>
+
+	  <li id="tab_button">
+	                <div id="api_key">
+              <button id="api_key_form_toggle">Connect to Bitcoin.de</button>
+              <form method="POST" action="#" id="refresh_form" style="display:none;">
+                {% csrf_token %}
+                <table>
+                  <tbody>
+                    <tr>
+                      <td><label for="key">public key:</label></td>
+                      <td><input name="key" size="32"/></td>
+                    </tr>
+                    <tr>
+                      <td><label for="sec">secret:</label></td>
+                      <td><input type="password" name="sec" size="32"/></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <input type="submit" tabindex="-1" style="position:absolute; top:-1000px"/>
+                <span class="spinner" ></span><span id="refresh_msg"></span>
+              </form>
+              <script src="{% static 'refresh_form.js' %}"></script>
+            </div>
+
+	  </li>
+        </ul>
+        <div id="charts-tab">
+	  <span id="chart_spinner" class='spinner'></span><span id="chart_msg" class='msg'></span>
+          <div id="chart_container">
+            <canvas id="chart"></canvas>
+          </div>
+
+	  <div id="data_table">
+	  </div>
+	  
+	  <script src="{% static 'Chart.bundle.min.js' %}"></script>
+          <script src="{% static 'percentile_chart.js' %}"></script>
+
+        </div>
+      </div>
+      <script src="{% static 'tabs.js' %}"></script>
+
+    </main>
+    <footer>
+      <a href="https://github.com/Echsecutor/bitcoin_de_trading_scripts">Fork me on GitHub</a>
+    </footer>
+  </body>
+</html>
