@@ -133,12 +133,11 @@ class BaseQuerry(object):
 
     def __query_json(self, url):
         response = self.__query_url(url)
-        else:
-            try:
-                return response.json()
-            except:
-                logging.error("Could not parse json")
-                return None
+        try:
+            return response.json()
+        except:
+            logging.error("Could not parse json")
+            return None
 
 
 class Shapeshift(BaseQuerry):
@@ -156,7 +155,7 @@ class Shapeshift(BaseQuerry):
         if response is None:
             return None
         else:
-            if "error" in response 
+            if "error" in response:
                 logging.error("Error getting market info. Respinse %s", response["error"])
                 return None
 

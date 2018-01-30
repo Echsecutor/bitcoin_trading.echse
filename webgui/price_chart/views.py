@@ -7,8 +7,7 @@ from django.http import JsonResponse
 
 import logging
 
-from . import api_call, data_analysis
-from .models import Transaction
+from . import apis, data_analysis, models
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ def index(request):
 
 
 def chart(request):
-    db_data = [(x[0], x[1]) for x in Transaction.objects.order_by('tid').values_list("date", "price")]
+    db_data = [(x[0], x[1]) for x in models.BitcoinDe.objects.order_by('tid').values_list("date", "price")]
     db_data.sort(key=lambda x: x[0])
     # todo: UI
     delta = timedelta(days=1)
@@ -66,9 +65,9 @@ def retrieve_data_from_api(request):
                 'msg': "API key incomplete or missing."
             })
 
-        api = api_call.BCdeSession(key, sec)
+        api = apis.BCdeSession(key, sec)
         max_tid = 0
-        max_tid_agg = Transaction.objects.all().aggregate(Max('tid'))
+        max_tid_agg = models.BitcoinDe.objects.all().aggregate(Max('tid'))
         if max_tid_agg:
             max_tid = max_tid_agg['tid__max']
         logger.debug("Max tid = %s", max_tid)
@@ -80,7 +79,7 @@ def retrieve_data_from_api(request):
             with transaction.atomic():
                 for row in new_trades['trades']:
                     timestamp = datetime.fromtimestamp(float(row['date']))
-                    insert = Transaction(
+                    insert = models.BitcoinDe(
                         tid=row['tid'],
                         date=timestamp.replace(tzinfo=timezone.utc),
                         price=row['price'],
@@ -104,7 +103,7 @@ def retrieve_data_from_api(request):
 
 def data(request):
     # reder all data in DB
-    data_db = Transaction.objects.order_by('tid')
+    data_db = models.BitcoinDe.objects.order_by('tid')
     data_list = [row for row in data_db]
     # do only show the last 100
     # 2 do: use a proper data table instead
