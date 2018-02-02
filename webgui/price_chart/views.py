@@ -19,7 +19,7 @@ def index(request):
     return render(request, 'index.html')
 
 
-def chart(request):
+def chart(_):
     db_data = [(x[0], x[1]) for x in models.BitcoinDe.objects.order_by('tid').values_list("date", "price")]
     db_data.sort(key=lambda x: x[0])
     # todo: UI

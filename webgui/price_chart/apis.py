@@ -2,10 +2,10 @@
 This module facilitates the details of the api connection.
 See https://www.bitcoin.de/de/api/tapi/v2/docu
 
-.. moduleauthor:: Sebastian Schmittner <sebastian@schmittner.pw>
+.. moduleauthor:: Sebastian Schmittner <sebastian@schmittner.pw> and Jan Schmidt
 
 
-Copyright 2017 Sebastian Schmittner
+Copyright 2017-2018 Sebastian Schmittner
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -133,10 +133,13 @@ class BaseQuerry(object):
 
     def __query_json(self, url):
         response = self.__query_url(url)
+        if not response:
+            return None
+
         try:
             return response.json()
-        except:
-            logging.error("Could not parse json")
+        except Exception as ex:  #pylint: disable=W
+            logging.error("Could not parse json: %s", ex)
             return None
 
 
@@ -148,18 +151,17 @@ class Shapeshift(BaseQuerry):
 
     def get_marketinfo(self, pair=None):
         """If none is given, return dict of all pairs"""
-        url = API_BASE_URL + "/marketinfo/"
+        url = self.API_BASE_URL + "/marketinfo/"
         url += pair or ""
         response = self.__query_json(url)
 
-        if response is None:
+        if not response:
             return None
-        else:
-            if "error" in response:
-                logging.error("Error getting market info. Respinse %s", response["error"])
-                return None
+        elif "error" in response:
+            logging.error("Error getting market info. Respinse %s", response["error"])
+            return None
 
-            return resp_json
+        return response
 
     def recent_trx(self, max_trans=50):
         """Get the most recent max_trans transactions. max_trans must be in [1,50]"""
@@ -178,7 +180,7 @@ class BitcoinCharts(BaseQuerry):
     def weighted_prices(self):
         """Get json of weighted prices in differen currencies"""
         url = self.API_BASE_URL + "/weighted_prices.json"
-        return self.__query(url)
+        return self.__query_json(url)
 
     def market_data(self):
         url = self.API_BASE_URL + "/markets.json"
@@ -192,11 +194,15 @@ class BitcoinCharts(BaseQuerry):
         if starttime:
             url += r"&start=" + str(starttime)
         response = self.__query_url(url)
-        list_cvs = map(lambda x: list(map(lambda y: float(y), x.split(","))) ,response.split("\n"))
+        list_cvs = [
+            [float(y) for y in x.split(",")]
+            for x in response.split("\n")
+        ]
         return [{
             "timestamp": x[0],
             "price": x[1],
-            "amount": x[2]} for x in list_cvs ]
+            "amount": x[2]} for x in list_cvs
+        ]
 
 class XCrypto(BaseQuerry):
     """See https://x-crypto.com/_cc_api.php"""
@@ -206,11 +212,14 @@ class XCrypto(BaseQuerry):
     def ticker(self, currency1="btc", currency2="eur"):
         url = self.API_BASE_URL + "/" + currency1 + "/" + currency2
         response = self.__query_url(url)
+        if not response:
+            return None
         if "Error" in response.text:
             logging.error("Error while accessing data: %s", response.text)
         try:
             return response.json()
-        except:
+        except Exception as ex: #pylint: disable=W
+            logging.error("Error converting response to json: %s", ex)
             return None
 
     def orderbook(self, currency1="btc", currency2="eur", maxlist=None):
@@ -219,7 +228,7 @@ class XCrypto(BaseQuerry):
         return self.__query_json(url)
 
     def trades(self, currency1="btc", currency2="eur", maxtrades=None):
-        url = self.API_BASE_URL + "/trades/" + currency1 + "/" + currency1
+        url = self.API_BASE_URL + "/trades/" + currency1 + "/" + currency2
         url += maxtrades or ""
         return self.__query_json(url)
 
