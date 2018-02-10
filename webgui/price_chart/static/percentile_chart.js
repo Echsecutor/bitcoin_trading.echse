@@ -29,7 +29,7 @@ function init_chart(){
     elements: {
       line: {
         // interpolation
-        tension: 0.000001
+        tension: 0.1
       }
     }
   };

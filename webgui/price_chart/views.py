@@ -26,7 +26,7 @@ def chart(request):
     # todo: UI->choose bins
     delta = timedelta(days=1)
     bins = data_analysis.bin_dated_data(db_data, 0, delta)
-    percentiles_at = [0, 0.3, 0.5, 0.7, 1.0]
+    percentiles_at = [0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
     percentiles = [
         data_analysis.get_percentiles(
             db_data[bins[i]:bins[i+1]-1],
