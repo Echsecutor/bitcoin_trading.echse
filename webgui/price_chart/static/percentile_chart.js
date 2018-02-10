@@ -10,7 +10,16 @@ function init_chart(){
     maintainAspectRatio: false,
     scales: {
       yAxes: [{
-        stacked: true
+        stacked: true,
+        gridLines: {
+          color: "rgba(255,255,255,0.5)"
+        }
+      }],
+      xAxes: [{
+        type: 'category',
+        gridLines: {
+          color: "rgba(255,255,255,0.5)"
+        }
       }]
     },
     title:{
@@ -33,7 +42,7 @@ function init_chart(){
 
 }
 
-function load_chart(chart_data){
+function load_chart(){
 
   $.ajax({
     type: "GET",
@@ -47,7 +56,7 @@ function load_chart(chart_data){
     success: function(data, textStatus)
     {
       chart.data = data.chart_data;
-      chart.render();
+      chart.update();
       console.log("new chart data:");
       console.log(chart.data);
     },
