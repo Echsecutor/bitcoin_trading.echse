@@ -20,7 +20,8 @@ def index(request):
     return render(request, 'index.html')
 
 
-def chart(request):
+# request is not used on purpose. ;)
+def chart(request):#pylint: disable=W
     db_data = [(x[0], x[1]) for x in Transaction.objects.order_by('tid').values_list("date", "price")]
     db_data.sort(key=lambda x: x[0])
     # todo: UI->choose bins
