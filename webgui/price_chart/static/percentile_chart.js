@@ -10,7 +10,7 @@ function init_chart(){
     maintainAspectRatio: false,
     scales: {
       yAxes: [{
-        stacked: true,
+        type: 'linear',
         gridLines: {
           color: "rgba(255,255,255,0.5)"
         }
