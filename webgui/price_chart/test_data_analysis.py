@@ -90,7 +90,7 @@ def test_bin_dated_data():
 
     assert bins[0] == 0
     assert bins[-1] == len(data)
-    
+
     for i in range(0, len(bins) - 1):
         assert abs(data[bins[i]][0] - data[bins[i+1]-1][0]) <= delta
         if i > 0:

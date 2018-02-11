@@ -37,6 +37,7 @@ def bin_dated_data(p_data,
     guaranteed to be <= p_bin_width.
 
     @post: p_data[bin_border[i+1]][p_date_index] - p_data[bin_border[i]][p_date_index] > p_bin_width
+    for i=0,... len(bin_border)-2, i.e. except for the last bin
 
     """
     bin_border = [0, ]
@@ -59,7 +60,7 @@ def get_percentiles(
         p_data,
         p_data_index=2,
         p_percentiles_at=None):
-    """Return a list of len = len(p_percentiles_at) the percentiles.
+    """Return a list of len = len(p_percentiles_at) percentiles.
     I.e. the minimum values such that the given ratio of the p_data
     points are <= than the respective values.  In particular, the
     percentiles 0, 0.5 and 1 correspond to the minimum, median and

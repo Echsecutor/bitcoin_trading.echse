@@ -20,13 +20,14 @@ def index(request):
     return render(request, 'index.html')
 
 
-def chart(request):
+# request is not used on purpose. ;)
+def chart(request):#pylint: disable=W
     db_data = [(x[0], x[1]) for x in Transaction.objects.order_by('tid').values_list("date", "price")]
     db_data.sort(key=lambda x: x[0])
-    # todo: UI
+    # todo: UI->choose bins
     delta = timedelta(days=1)
     bins = data_analysis.bin_dated_data(db_data, 0, delta)
-    percentiles_at = [0, 0.3, 0.5, 0.7, 1.0]
+    percentiles_at = [0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
     percentiles = [
         data_analysis.get_percentiles(
             db_data[bins[i]:bins[i+1]-1],
@@ -35,16 +36,19 @@ def chart(request):
         for i in range(0, len(bins)-1)
     ]
     chart_data = {
-        "labels": [str(db_data[b][0]) for b in bins[:-2]],
+        "labels": [str(db_data[b][0]) for b in bins[:-1]],
         "datasets": [
             {
                 "fill": "+1",
+                "borderColor": "rgb(" + str(i * 23 % 256) + "," + str((i + 1) * 7727 % 256) + "," + str(i * 67 % 256) + ")",
                 "label": "p" + str(percentiles_at[i]),
                 "data": [float(x[i]) for x in percentiles]
             }
             for i in range(0, len(percentiles_at))
             ]
     }
+    for ds in chart_data["datasets"]:
+        ds["backgroundColor"] = ds["borderColor"]
     chart_data["datasets"][-1]["fill"] = "0"
 
     return JsonResponse({
