@@ -30,7 +30,30 @@ import time
 import requests
 
 
-class BCdeSession(object):
+class BaseQuerry(object):
+    def query_url(self, url, headers=None):
+        if headers:
+            logging.debug("headers=%s", headers)
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            logging.error("Error getting info. Response %s", response.status_code)
+            return None
+        else:
+            return response
+
+    def query_json(self, url, *args, **kwargs):
+        response = self.query_url(url)
+        if not response:
+            return None
+
+        try:
+            return response.json()
+        except Exception as ex:  #pylint: disable=W
+            logging.error("Could not parse json: %s", ex)
+            return None
+
+
+class BCdeSession(BaseQuerry):
     """API Wrapper"""
     def __init__(self, c_public_key, c_private_key, api_credits=20):
         self.c_private_key = c_private_key
@@ -71,7 +94,7 @@ class BCdeSession(object):
         return: request object
         """
         if not headers:
-            headers = {}
+            headers = dict()
 
         if self.api_credits < 3:
             logging.warning(
@@ -86,14 +109,7 @@ class BCdeSession(object):
         headers['X-API-SIGNATURE'] = self.generate_api_signature(
             method, url, headers['X-API-NONCE'], post_params)
 
-        logging.debug("headers=%s", headers)
-
-        response = requests.get(url, headers=headers)
-        logging.debug("Response %s = %s",
-                      response.status_code,
-                      response.reason)
-
-#    logging.debug("Content = %s", response.content)
+        response = super().querry(url, headers=headers)
 
         if response.status_code == 200:
             self.api_credits = response.json()["credits"]
@@ -122,27 +138,6 @@ class BCdeSession(object):
         return response.json()
 
 
-class BaseQuerry(object):
-    def __query_url(self, url):
-        response = requests.get(url, "GET")
-        if response.status_code != 200:
-            logging.error("Error getting info. Response %s", response.status_code)
-            return None
-        else:
-            return response
-
-    def __query_json(self, url):
-        response = self.__query_url(url)
-        if not response:
-            return None
-
-        try:
-            return response.json()
-        except Exception as ex:  #pylint: disable=W
-            logging.error("Could not parse json: %s", ex)
-            return None
-
-
 class Shapeshift(BaseQuerry):
     """See https://info.shapeshift.io/api"""
     def __init__(self, api_key=None):
@@ -153,7 +148,7 @@ class Shapeshift(BaseQuerry):
         """If none is given, return dict of all pairs"""
         url = self.API_BASE_URL + "/marketinfo/"
         url += pair or ""
-        response = self.__query_json(url)
+        response = self.query_json(url)
 
         if not response:
             return None
@@ -169,7 +164,7 @@ class Shapeshift(BaseQuerry):
             logging.error("max_trans must be in [1, 50]. %s given.", max_trans)
             return None
         url = self.API_BASE_URL + "/recenttx/" + str(max_trans)
-        return self.__query_json(url)
+        return self.query_json(url)
 
 
 class BitcoinCharts(BaseQuerry):
@@ -180,11 +175,11 @@ class BitcoinCharts(BaseQuerry):
     def weighted_prices(self):
         """Get json of weighted prices in differen currencies"""
         url = self.API_BASE_URL + "/weighted_prices.json"
-        return self.__query_json(url)
+        return self.query_json(url)
 
     def market_data(self):
         url = self.API_BASE_URL + "/markets.json"
-        return self.__query_json(url)
+        return self.query_json(url)
 
     def historic_trade_data(self, symbol, starttime=None):
         """Get historic trade data. Symbol can be obtained from market_data. starttime is a Unixtimestamp.
@@ -193,7 +188,7 @@ class BitcoinCharts(BaseQuerry):
         url = self.API_BASE_URL + "/trades.csv?symbol=" + symbol
         if starttime:
             url += r"&start=" + str(starttime)
-        response = self.__query_url(url)
+        response = self.query_url(url)
         list_cvs = [
             [float(y) for y in x.split(",")]
             for x in response.split("\n")
@@ -211,7 +206,7 @@ class XCrypto(BaseQuerry):
 
     def ticker(self, currency1="btc", currency2="eur"):
         url = self.API_BASE_URL + "/" + currency1 + "/" + currency2
-        response = self.__query_url(url)
+        response = self.query_url(url)
         if not response:
             return None
         if "Error" in response.text:
@@ -225,10 +220,10 @@ class XCrypto(BaseQuerry):
     def orderbook(self, currency1="btc", currency2="eur", maxlist=None):
         url = self.API_BASE_URL + "/orderbook/" + currency1 + "/" + currency2 + "/"
         url += maxlist or ""
-        return self.__query_json(url)
+        return self.query_json(url)
 
     def trades(self, currency1="btc", currency2="eur", maxtrades=None):
         url = self.API_BASE_URL + "/trades/" + currency1 + "/" + currency2
         url += maxtrades or ""
-        return self.__query_json(url)
+        return self.query_json(url)
 
