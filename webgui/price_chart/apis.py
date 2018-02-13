@@ -41,8 +41,8 @@ class BaseQuerry(object):
         else:
             return response
 
-    def query_json(self, url, *args, **kwargs):
-        response = self.query_url(url)
+    def query_json(self, url, headers=None):
+        response = self.query_url(url, headers)
         if not response:
             return None
 
@@ -127,15 +127,7 @@ class BCdeSession(BaseQuerry):
             url += "&since_tid={}".format(since_tid)
             logging.debug("since_tid = %s", since_tid)
 
-        response = self.query(url)
-
-        logging.debug("response = %s", response.content)
-
-        if response.status_code != 200:
-            logging.error("Error getting trade history. Response %s", response.status_code)
-            return None
-
-        return response.json()
+        return self.query(url).json()
 
 
 class Shapeshift(BaseQuerry):
