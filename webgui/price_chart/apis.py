@@ -109,7 +109,7 @@ class BCdeSession(BaseQuerry):
         headers['X-API-SIGNATURE'] = self.generate_api_signature(
             method, url, headers['X-API-NONCE'], post_params)
 
-        response = super().querry(url, headers=headers)
+        response = super().query_url(url, headers=headers)
 
         if response.status_code == 200:
             self.api_credits = response.json()["credits"]
