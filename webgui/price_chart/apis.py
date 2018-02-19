@@ -32,6 +32,10 @@ import requests
 logger = logging.getLogger(__name__)
 
 class BaseQuerry(object):
+    def __init__(self, name):
+        """Each API should have a unique name"""
+        self.name = name
+
     def query_url(self, url, headers=None):
         if headers:
             logger.debug("headers=%s", headers)
@@ -55,8 +59,9 @@ class BaseQuerry(object):
 
 
 class BCdeSession(BaseQuerry):
-    """API Wrapper"""
+    """bitcoin.de API Wrapper"""
     def __init__(self, c_public_key, c_private_key, api_credits=20):
+        super(BCdeSession, self).__init__("bitcoind.de")
         self.c_private_key = c_private_key
         self.c_public_key = c_public_key
         self.api_credits = api_credits
@@ -112,7 +117,7 @@ class BCdeSession(BaseQuerry):
 
         response = super().query_json(url, headers=headers)
 
-        if response.status_code == 200:
+        if response:
             self.api_credits = response["credits"]
             logger.info("Credits left: %s", self.api_credits)
 
@@ -134,13 +139,14 @@ class BCdeSession(BaseQuerry):
 class Shapeshift(BaseQuerry):
     """See https://info.shapeshift.io/api"""
     def __init__(self, api_key=None):
+        super(Shapeshift, self).__init__("shapeshift")
         self.API_BASE_URL = "https://shapeshift.io"
         self.api_key = api_key
+        "not yet used"
 
-    def get_marketinfo(self, pair=None):
+    def get_marketinfo(self, curIn="btc", curOut="eth"):
         """If none is given, return dict of all pairs"""
-        url = self.API_BASE_URL + "/marketinfo/"
-        url += pair or ""
+        url = self.API_BASE_URL + "/marketinfo/" + curIn + "_" + curOut
         response = self.query_json(url)
 
         if not response:
@@ -151,7 +157,7 @@ class Shapeshift(BaseQuerry):
 
         return response
 
-    def recent_trx(self, max_trans=50):
+    def recent_tx(self, max_trans=50):
         """Get the most recent max_trans transactions. max_trans must be in [1,50]"""
         if max_trans not in range(51):
             logger.error("max_trans must be in [1, 50]. %s given.", max_trans)
@@ -163,6 +169,7 @@ class Shapeshift(BaseQuerry):
 class BitcoinCharts(BaseQuerry):
     """See https://bitcoincharts.com/about/markets-api/"""
     def __init__(self):
+        super(BitcoinCharts, self).__init__("bitcoincharts")
         self.API_BASE_URL = "http://api.bitcoincharts.com/v1"
 
     def weighted_prices(self):
@@ -192,9 +199,11 @@ class BitcoinCharts(BaseQuerry):
             "amount": x[2]} for x in list_cvs
         ]
 
+
 class XCrypto(BaseQuerry):
     """See https://x-crypto.com/_cc_api.php"""
     def __init__(self):
+        super(XCrypto, self).__init__("xcrypto")
         self.API_BASE_URL = "https://x-crypto.com/api"
 
     def ticker(self, currency1="btc", currency2="eur"):

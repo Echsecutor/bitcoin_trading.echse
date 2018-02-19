@@ -3,20 +3,22 @@
 <table>
   <thead>
     <tr>
-      <th>TID</th>
-      <th>Trading</th>
+      <th>Souce</th>
       <th>Date</th>
-      <th>Price</th>
+      <th>From</th>
+      <th>To</th>
+      <th>Rate</th>
       <th>Amount</th>
     </tr>
   </thead>
   <tbody>
     {% for transaction in data %}
     <tr>
-      <td>{{ transaction.tid }}</td>
-      <td>{{ transaction.trading_pair }}</td>
+      <td>{{ transaction.source }}</td>
       <td>{{ transaction.date }}</td>
-      <td>{{ transaction.price }}</td>
+      <td>{{ transaction.curIn }}</td>
+      <td>{{ transaction.curOut }}</td>
+      <td>{{ transaction.rate }}</td>
       <td>{{ transaction.amount }}</td>
     </tr>
     {% endfor %}

@@ -38,12 +38,11 @@ def from_bitcoin_de(key, sec, curIn="btc", curOut="eur"):
     This API needs a priv/pub API key pair in order to connect.
     Return number of inserted rows.
     """
-    source = "bitcoin.de"
     api = apis.BCdeSession(key, sec)
+    rows=models.Trade.objects.filter(source=api.name)
     max_tid = 0
-    max_tid_agg = models.Trade.objects.filter(source=source).aggregate(Max('source_id'))
-    if max_tid_agg:
-        max_tid = max_tid_agg['tid__max']
+    if rows.count() > 0:
+        max_tid = rows.aggregate(Max('source_id'))['source_id__max']
     logger.debug("Max tid = %s", max_tid)
     new_trades = api.get_public_trade_history(max_tid, curIn + curOut)
     logger.debug("Api returned %s", new_trades)
@@ -56,7 +55,7 @@ def from_bitcoin_de(key, sec, curIn="btc", curOut="eur"):
             for row in new_trades['trades']:
                 timestamp = datetime.fromtimestamp(float(row['date']))
                 insert = models.Trade(
-                    source=source,
+                    source=api.name,
                     source_id=row['tid'],
                     curIn=new_trades['trading_pair'][:3],
                     curOut=new_trades['trading_pair'][-3:],
@@ -66,5 +65,32 @@ def from_bitcoin_de(key, sec, curIn="btc", curOut="eur"):
                 )
                 insert.save()
                 num_inserted += 1
+
+    return num_inserted
+
+
+def from_shapeshift():
+    """
+    Get latest trades from shapeshift.
+    todo: Only gets 50 trades, hence this is not very useful.
+    Return number of inserted rows.
+    """
+    api = apis.Shapeshift()
+    recent_tx = api.recent_tx()
+    num_inserted = 0
+    for trade in recent_tx:
+        info = api.get_marketinfo(trade["curIn"], trade["curOut"])
+        timestamp = datetime.fromtimestamp(float(trade["timestamp"]))
+        insert = models.Trade(
+            source=api.name,
+            source_id=trade["txid"],
+            curIn=trade["curIn"],
+            curOut=trade["curOut"],
+            date=timestamp.replace(tzinfo=timezone.utc),
+            rate=info["rate"],
+            amount=trade['amount']
+        )
+        insert.save()
+        num_inserted += 1
 
     return num_inserted

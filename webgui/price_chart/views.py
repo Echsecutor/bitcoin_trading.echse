@@ -50,6 +50,14 @@ def chart(request):#pylint: disable=W
                 curIn=curIn, curOut=curOut).order_by(
                     'date').values_list("date", "rate")
     ]
+
+    if not db_data:
+        return JsonResponse({
+            'status': 200,
+            "chart_data": {},
+            "msg": "No data in DB"
+        })
+
     # todo: UI->choose bins
     days = int(request.POST.get("days", "1"))
     hours = int(request.POST.get("hours", "0"))
@@ -88,11 +96,13 @@ def chart(request):#pylint: disable=W
 
 
 def retrieve_data_from_api(request):
-    "get new transactions from API, needs API key + secret"
+    "get new transactions from APIs, needs API key + secret for bitcoind.de"
     try:
         logger.info("Retrieving new transactions from API.")
 
-        key, sec = request.POST['key'], request.POST['sec']
+        key = request.POST.get("key", None)
+        sec = request.POST.get("sec", None)
+
         if not key or not sec:
             return JsonResponse({
                 'status': 400,
@@ -100,6 +110,8 @@ def retrieve_data_from_api(request):
             })
 
         num_inserted = etl.from_bitcoin_de(key, sec)
+
+        num_inserted += etl.from_shapeshift()
 
         return JsonResponse({
             'status': 200,
