@@ -29,14 +29,15 @@ import time
 
 import requests
 
+logger = logging.getLogger(__name__)
 
 class BaseQuerry(object):
     def query_url(self, url, headers=None):
         if headers:
-            logging.debug("headers=%s", headers)
+            logger.debug("headers=%s", headers)
         response = requests.get(url, headers=headers)
         if response.status_code != 200:
-            logging.error("Error getting info. Response %s", response.status_code)
+            logger.error("Error getting info. Response %s", response.status_code)
             return None
         else:
             return response
@@ -49,7 +50,7 @@ class BaseQuerry(object):
         try:
             return response.json()
         except Exception as ex:  #pylint: disable=W
-            logging.error("Could not parse json: %s", ex)
+            logger.error("Could not parse json: %s", ex)
             return None
 
 
@@ -72,7 +73,7 @@ class BCdeSession(BaseQuerry):
                 sorted_params.append("{}={}".format(key, val))
             sorted_params.sort()
         query_string = "?".join(sorted_params)
-        logging.debug("query_string: '%s' = %s", query_string, query_string.encode())
+        logger.debug("query_string: '%s' = %s", query_string, query_string.encode())
         hashed_query_string = hashlib.md5(query_string.encode()).hexdigest()
         hmac_data = "{}#{}#{}#{}#{}".format(
             method,
@@ -81,7 +82,7 @@ class BCdeSession(BaseQuerry):
             nonce,
             hashed_query_string
             )
-        logging.debug("hamc_data: %s", hmac_data)
+        logger.debug("hamc_data: %s", hmac_data)
 
         return hmac.new(
             self.c_private_key.encode(),
@@ -97,37 +98,37 @@ class BCdeSession(BaseQuerry):
             headers = dict()
 
         if self.api_credits < 3:
-            logging.warning(
+            logger.warning(
                 "Not enough api_credits (to high request frequency).\n"
                 + "Sleeping for 3 seconds...")
             time.sleep(3)
         else:
-            logging.debug("We have at least %s api_credits", self.api_credits)
+            logger.debug("We have at least %s api_credits", self.api_credits)
 
         headers['X-API-KEY'] = self.c_public_key
         headers['X-API-NONCE'] = str(int(time.time()))
         headers['X-API-SIGNATURE'] = self.generate_api_signature(
             method, url, headers['X-API-NONCE'], post_params)
 
-        response = super().query_url(url, headers=headers)
+        response = super().query_json(url, headers=headers)
 
         if response.status_code == 200:
-            self.api_credits = response.json()["credits"]
-            logging.debug("Credits left: %s", self.api_credits)
+            self.api_credits = response["credits"]
+            logger.info("Credits left: %s", self.api_credits)
 
         return response
 
-    def get_public_trade_history(self, since_tid=None):
+    def get_public_trade_history(self, since_tid=None, trading_pair="btceur"):
         """
         Query the btceur trade history and return the JSON answer.
         Return None on error.
         """
-        url = self.C_API_URL + "/trades/history?trading_pair=btceur"
+        url = self.C_API_URL + "/trades/history?trading_pair=" + trading_pair
         if since_tid:
             url += "&since_tid={}".format(since_tid)
-            logging.debug("since_tid = %s", since_tid)
+            logger.debug("since_tid = %s", since_tid)
 
-        return self.query(url).json()
+        return self.query(url)
 
 
 class Shapeshift(BaseQuerry):
@@ -145,7 +146,7 @@ class Shapeshift(BaseQuerry):
         if not response:
             return None
         elif "error" in response:
-            logging.error("Error getting market info. Respinse %s", response["error"])
+            logger.error("Error getting market info: %s", response["error"])
             return None
 
         return response
@@ -153,7 +154,7 @@ class Shapeshift(BaseQuerry):
     def recent_trx(self, max_trans=50):
         """Get the most recent max_trans transactions. max_trans must be in [1,50]"""
         if max_trans not in range(51):
-            logging.error("max_trans must be in [1, 50]. %s given.", max_trans)
+            logger.error("max_trans must be in [1, 50]. %s given.", max_trans)
             return None
         url = self.API_BASE_URL + "/recenttx/" + str(max_trans)
         return self.query_json(url)
@@ -202,11 +203,11 @@ class XCrypto(BaseQuerry):
         if not response:
             return None
         if "Error" in response.text:
-            logging.error("Error while accessing data: %s", response.text)
+            logger.error("Error while accessing data: %s", response.text)
         try:
             return response.json()
         except Exception as ex: #pylint: disable=W
-            logging.error("Error converting response to json: %s", ex)
+            logger.error("Error converting response to json: %s", ex)
             return None
 
     def orderbook(self, currency1="btc", currency2="eur", maxlist=None):
@@ -218,4 +219,3 @@ class XCrypto(BaseQuerry):
         url = self.API_BASE_URL + "/trades/" + currency1 + "/" + currency2
         url += maxtrades or ""
         return self.query_json(url)
-
