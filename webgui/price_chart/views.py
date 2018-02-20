@@ -96,7 +96,7 @@ def chart(request):#pylint: disable=W
 
 
 def retrieve_data_from_api(request):
-    "get new transactions from APIs, needs API key + secret for bitcoind.de"
+    "get new transactions from APIs, needs API key + secret for bitcoin.de"
     try:
         logger.info("Retrieving new transactions from API.")
 

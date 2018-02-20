@@ -61,7 +61,7 @@ class BaseQuerry(object):
 class BCdeSession(BaseQuerry):
     """bitcoin.de API Wrapper"""
     def __init__(self, c_public_key, c_private_key, api_credits=20):
-        super(BCdeSession, self).__init__("bitcoind.de")
+        super(BCdeSession, self).__init__("bitcoin.de")
         self.c_private_key = c_private_key
         self.c_public_key = c_public_key
         self.api_credits = api_credits
