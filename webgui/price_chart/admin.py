@@ -1,5 +1,5 @@
 from django.contrib import admin
 
-from .models import Transaction
+from . import models
 
-admin.site.register(Transaction)
+admin.site.register(models.Trade)

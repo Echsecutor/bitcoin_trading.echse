@@ -1,14 +1,32 @@
+"""
+.. moduleauthor:: Sebastian Schmittner <sebastian@schmittner.pw> and Jan Schmidt
+
+
+Copyright 2017-2018 Sebastian Schmittner
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+
 from django.shortcuts import render
-from django.db import transaction
-from django.db.models import Max
-from datetime import datetime, timezone, timedelta
+from datetime import timedelta
 
 from django.http import JsonResponse
 
 import logging
 
-from . import api_call, data_analysis
-from .models import Transaction
+from . import data_analysis, etl, models
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +40,31 @@ def index(request):
 
 # request is not used on purpose. ;)
 def chart(request):#pylint: disable=W
-    db_data = [(x[0], x[1]) for x in Transaction.objects.order_by('tid').values_list("date", "price")]
-    db_data.sort(key=lambda x: x[0])
+    # todo: UI -> choose pair
+    curIn = request.POST.get("curIn", "btc")
+    curOut = request.POST.get("curOut", "eur")
+
+    db_data = [
+        (x[0], x[1])
+        for x in models.Trade.objects.filter(
+                curIn=curIn, curOut=curOut).order_by(
+                    'date').values_list("date", "rate")
+    ]
+
+    if not db_data:
+        return JsonResponse({
+            'status': 200,
+            "chart_data": {},
+            "msg": "No data in DB"
+        })
+
     # todo: UI->choose bins
-    delta = timedelta(days=1)
+    days = int(request.POST.get("days", "1"))
+    hours = int(request.POST.get("hours", "0"))
+    delta = timedelta(days=days, hours=hours)
     bins = data_analysis.bin_dated_data(db_data, 0, delta)
+
+    # todo: UI -> choose percentiles
     percentiles_at = [0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
     percentiles = [
         data_analysis.get_percentiles(
@@ -58,41 +96,22 @@ def chart(request):#pylint: disable=W
 
 
 def retrieve_data_from_api(request):
-    "get new transactions from API, needs API key + secret"
+    "get new transactions from APIs, needs API key + secret for bitcoind.de"
     try:
-        num_inserted = 0
         logger.info("Retrieving new transactions from API.")
 
-        key, sec = request.POST['key'], request.POST['sec']
+        key = request.POST.get("key", None)
+        sec = request.POST.get("sec", None)
+
         if not key or not sec:
             return JsonResponse({
                 'status': 400,
                 'msg': "API key incomplete or missing."
             })
 
-        api = api_call.BCdeSession(key, sec)
-        max_tid = 0
-        max_tid_agg = Transaction.objects.all().aggregate(Max('tid'))
-        if max_tid_agg:
-            max_tid = max_tid_agg['tid__max']
-        logger.debug("Max tid = %s", max_tid)
-        new_trades = api.get_public_trade_history(max_tid)
-        logger.debug("Api returned %s", new_trades)
+        num_inserted = etl.from_bitcoin_de(key, sec)
 
-        if new_trades:
-            # transaction for performance
-            with transaction.atomic():
-                for row in new_trades['trades']:
-                    timestamp = datetime.fromtimestamp(float(row['date']))
-                    insert = Transaction(
-                        tid=row['tid'],
-                        date=timestamp.replace(tzinfo=timezone.utc),
-                        price=row['price'],
-                        amount=row['amount'],
-                        trading_pair=new_trades['trading_pair']
-                    )
-                    insert.save()
-                    num_inserted += 1
+        num_inserted += etl.from_shapeshift()
 
         return JsonResponse({
             'status': 200,
@@ -107,14 +126,15 @@ def retrieve_data_from_api(request):
 
 
 def data(request):
-    # reder all data in DB
-    data_db = Transaction.objects.order_by('tid')
-    data_list = [row for row in data_db]
-    # do only show the last 100
-    # 2 do: use a proper data table instead
+    # todo: UI how many?
+    num = int(request.POST.get("num", "100"))
+    total = models.Trade.objects.count()
+    data_db = models.Trade.objects.order_by("-date")[:num]
+
+    # todo: UI: use a proper data table instead
     context = {
         'status': 200,
-        'data': data_list[-100:],
-        'num_total': len(data_list)
+        'data': data_db,
+        'num_total': total
     }
     return render(request, "data_table.html", context)
